@@ -3,6 +3,8 @@
 {% block title %}Create Pokémon team!{% endblock %}
 
 {% block body %}
-    {{ form(form) }}
+    {{ form_start(form) }}
+    {{ form_rest(form) }}
     <button type="submit" class="btn btn-primary" name="Insert">Insert Team</button>
+    {{ form_end(form) }}
 {% endblock %}
