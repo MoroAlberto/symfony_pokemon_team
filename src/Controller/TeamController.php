@@ -27,8 +27,8 @@ class TeamController extends AbstractController
     {
         $team = new Team();
         $team->setName('');
-        $team->setCreatedAt(new \DateTimeImmutable());
-        $team->setUpdatedAt(new \DateTimeImmutable('today'));
+        $team->setCreatedAt(new \DateTime());
+        $team->setUpdatedAt(new \DateTimeImmutable());
 
         $form = $this->createForm(TeamType::class, $team);
         $form->handleRequest($request);
@@ -36,11 +36,16 @@ class TeamController extends AbstractController
             $team = $form->getData();
             $entityManager->persist($team);
             $entityManager->flush();
+            $this->addFlash(
+                'success',
+                'Your changes were saved!'
+            );
         }
         if ($form->isSubmitted() && !$form->isValid()) {
             //todo remove in prod
             //dd($form->getErrors());
         }
+
 
         return $this->render('team/create.html.twig', [
             'form' => $form->createView()

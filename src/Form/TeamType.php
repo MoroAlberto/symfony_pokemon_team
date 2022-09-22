@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\Team;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -14,7 +15,7 @@ class TeamType extends AbstractType
     {
         $builder
             ->add('name',TextType::class)
-            ->add('created_at')
+            ->add('created_at', DateType::class)
         ;
     }
 
