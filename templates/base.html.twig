@@ -18,7 +18,7 @@
         {% endblock %}
     </head>
     <body>
-        <div class="container-fluid">
+        <div class="container">
             {% block body %}{% endblock %}
             {# read and display just one flash message type #}
             {% for message in app.flashes('notice') %}

@@ -54,9 +54,12 @@ class TeamController extends AbstractController
 
 
     #[Route('/team/list', name: 'list_teams')]
-    public function listTeams(): Response
+    public function listTeams(TeamRepository $teamRepository): Response
     {
+        $teams = $teamRepository->findAll();
+
         return $this->render('team/list.html.twig', [
+            'teams' => $teams,
         ]);
     }
 

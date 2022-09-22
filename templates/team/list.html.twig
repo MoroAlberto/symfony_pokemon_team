@@ -3,5 +3,35 @@
 {% block title %}List of Pokémon{% endblock %}
 
 {% block body %}
-     <p>Hello Pokémon Master!</p>
+    <div class="jumbotron">
+
+        <table class="table">
+            <h1>Team list</h1>
+            <thead class="thead-dark">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Sprite</th>
+                <th scope="col">Sum Exp</th>
+                <th scope="col">Types</th>
+                <th scope="col">Creation date</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for team in teams %}
+                <tr>
+                    <th scope="row">{{ team.id }}</th>
+                    <td> {{ team.name }}</td>
+                    <td> {{ team.name }}</td>
+                    <td> {{ team.name }}</td>
+                    <td> {{ team.name }}</td>
+{#                    <td> {{ team.sprite }}</td>#}
+{#                    <td> {{ team.exp }}</td>#}
+{#                    <td> {{ team.types }}</td>#}
+                    <td> {{ team.createdAt | date('d-m-Y')}}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}
