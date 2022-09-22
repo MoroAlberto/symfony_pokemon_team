@@ -2,13 +2,13 @@
 
 namespace App\Entity;
 
-use App\Repository\TeamRepository;
+use App\Repository\AbilityRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: TeamRepository::class)]
-class Team
+#[ORM\Entity(repositoryClass: AbilityRepository::class)]
+class Ability
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -18,13 +18,7 @@ class Team
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\Column]
-    private ?\DateTimeImmutable $created_at = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $updated_at = null;
-
-    #[ORM\OneToMany(mappedBy: 'team', targetEntity: Pokemon::class)]
+    #[ORM\ManyToMany(targetEntity: Pokemon::class, inversedBy: 'abilities')]
     private Collection $pokemon;
 
     public function __construct()
@@ -49,30 +43,6 @@ class Team
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
-    {
-        return $this->created_at;
-    }
-
-    public function setCreatedAt(\DateTimeImmutable $created_at): self
-    {
-        $this->created_at = $created_at;
-
-        return $this;
-    }
-
-    public function getUpdatedAt(): ?\DateTimeImmutable
-    {
-        return $this->updated_at;
-    }
-
-    public function setUpdatedAt(?\DateTimeImmutable $updated_at): self
-    {
-        $this->updated_at = $updated_at;
-
-        return $this;
-    }
-
     /**
      * @return Collection<int, Pokemon>
      */
@@ -85,7 +55,6 @@ class Team
     {
         if (!$this->pokemon->contains($pokemon)) {
             $this->pokemon->add($pokemon);
-            $pokemon->setTeam($this);
         }
 
         return $this;
@@ -93,12 +62,7 @@ class Team
 
     public function removePokemon(Pokemon $pokemon): self
     {
-        if ($this->pokemon->removeElement($pokemon)) {
-            // set the owning side to null (unless already changed)
-            if ($pokemon->getTeam() === $this) {
-                $pokemon->setTeam(null);
-            }
-        }
+        $this->pokemon->removeElement($pokemon);
 
         return $this;
     }
