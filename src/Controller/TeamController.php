@@ -2,6 +2,10 @@
 
 namespace App\Controller;
 
+use App\Entity\Team;
+use App\Form\TeamType;
+use App\Repository\TeamRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,6 +19,37 @@ class TeamController extends AbstractController
         //dump($request);
         return $this->render('team/index.html.twig', [
             'controller_name' => 'TeamController',
+        ]);
+    }
+
+    #[Route('/team/create', name: 'create_team')]
+    public function createTeam(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $team = new Team();
+        $team->setName('');
+        $team->setCreatedAt(new \DateTimeImmutable('today'));
+
+        $form = $this->createForm(TeamType::class, $team);
+
+        return $this->render('team/create.html.twig', [
+            'form' => $form->createView()
+        ]);
+    }
+
+
+    #[Route('/team/list', name: 'list_teams')]
+    public function listTeams(): Response
+    {
+        return $this->render('team/list.html.twig', [
+        ]);
+    }
+
+    #[Route('/team/{teamId}/edit', name: 'edit_team')]
+    public function editTeam(Team $teamId, TeamRepository $teamRepository): Response
+    {
+        $team = $teamRepository->find($teamId);
+        return $this->render('team/edit.html.twig', [
+            'team' => $team,
         ]);
     }
 }
