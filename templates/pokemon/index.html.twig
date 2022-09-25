@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Random Pokémon{% endblock %}
+
+{% block body %}
+    <div class="jumbotron">
+        <table class="table">
+            <thead class="thead-dark">
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Base Experience</th>
+                <th scope="col">Sprite</th>
+                <th scope="col">Abilities</th>
+                <th scope="col">Types</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td> {{ pokemon.name }}</td>
+                <td> {{ pokemon.baseExperience }}</td>
+                <td><img src="{{ pokemon.sprite }}" alt="Pokemon sprite"/></td>
+                <td>
+                    <ul>{% for ability in  pokemon.abilities %}
+                            <li>{{ ability.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>
+                    <ul>{% for type in  pokemon.types %}
+                            <li> {{ type.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

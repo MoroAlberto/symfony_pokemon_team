@@ -18,22 +18,19 @@ class Pokemon
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $type = null;
-
     #[ORM\Column]
     private ?int $base_experience = null;
 
     #[ORM\Column(length: 255)]
     private ?string $sprite = null;
 
-    #[ORM\ManyToMany(targetEntity: Ability::class, mappedBy: 'pokemon')]
+    #[ORM\ManyToMany(targetEntity: Ability::class, mappedBy: 'pokemon', cascade: ['persist'])]
     private Collection $abilities;
 
-    #[ORM\ManyToMany(targetEntity: Type::class, mappedBy: 'pokemon')]
+    #[ORM\ManyToMany(targetEntity: Type::class, mappedBy: 'pokemon', cascade: ['persist'])]
     private Collection $types;
 
-    #[ORM\ManyToOne(inversedBy: 'pokemon')]
+    #[ORM\ManyToOne(cascade: ['persist'], inversedBy: 'pokemon')]
     private ?Team $team = null;
 
     public function __construct()
@@ -55,18 +52,6 @@ class Pokemon
     public function setName(string $name): self
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function getType(): ?string
-    {
-        return $this->type;
-    }
-
-    public function setType(string $type): self
-    {
-        $this->type = $type;
 
         return $this;
     }
