@@ -5,10 +5,10 @@ namespace App\Controller;
 use App\Entity\Team;
 use App\Form\TeamType;
 use App\Repository\TeamRepository;
-use App\Service\PokemonService;
+use App\Service\TeamService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Cache\InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -37,7 +37,7 @@ class TeamController extends AbstractController
      * @throws ServerExceptionInterface
      */
     #[Route('/team/create', name: 'create_team')]
-    public function createTeam(Request $request, EntityManagerInterface $entityManager): Response
+    public function createTeam(Request $request, EntityManagerInterface $entityManager, TeamService $teamService): Response
     {
         $team = new Team();
 
@@ -49,7 +49,7 @@ class TeamController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $team = $form->getData();
-            $team = $this->addPokemonListToTeam($entityManager, $team);
+            $team = $teamService->addPokemonListToTeam($entityManager, $team);
             $entityManager->persist($team);
             $entityManager->flush();
 //            $this->addFlash(
@@ -58,26 +58,19 @@ class TeamController extends AbstractController
 //            );
             return $this->redirectToRoute('list_teams');
         }
-        if ($form->isSubmitted() && !$form->isValid()) {
-            //todo remove in prod
-            //dd($form->getErrors());
-        }
-
-
         return $this->render('team/create.html.twig', [
             'form' => $form->createView()
         ]);
     }
 
 
+    /**
+     * @throws InvalidArgumentException
+     */
     #[Route('/team/list', name: 'list_teams')]
-    public function listTeams(TeamRepository $teamRepository): Response
+    public function listTeams(TeamService $teamService,TeamRepository $teamRepository): Response
     {
-        $teams = $teamRepository->findBy(
-            array(),
-            array('created_at' => 'ASC')
-        );
-
+        $teams = $teamService->getTeamsCache();
         return $this->render('team/list.html.twig', [
             'teams' => $teams,
         ]);
@@ -106,22 +99,4 @@ class TeamController extends AbstractController
         ]);
     }
 
-    /**
-     * @throws TransportExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws ClientExceptionInterface
-     */
-    private function addPokemonListToTeam($entityManager, Team $team): Team
-    {
-        for ($i = 1; $i <= 6; $i++) {
-            $pokemonService = new PokemonService(HttpClient::create());
-            $pokemon = $pokemonService->newPokemon();
-            $entityManager->persist($pokemon);
-            $entityManager->flush();
-            $team->addPokemon($pokemon);
-        }
-        return $team;
-    }
 }

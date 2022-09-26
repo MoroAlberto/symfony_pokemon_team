@@ -24,13 +24,13 @@ class Pokemon
     #[ORM\Column(length: 255)]
     private ?string $sprite = null;
 
-    #[ORM\ManyToMany(targetEntity: Ability::class, mappedBy: 'pokemon', cascade: ['persist'])]
+    #[ORM\ManyToMany(targetEntity: Ability::class, mappedBy: 'pokemon')]
     private Collection $abilities;
 
-    #[ORM\ManyToMany(targetEntity: Type::class, mappedBy: 'pokemon', cascade: ['persist'])]
+    #[ORM\ManyToMany(targetEntity: Type::class, mappedBy: 'pokemon')]
     private Collection $types;
 
-    #[ORM\ManyToOne(cascade: ['persist'], inversedBy: 'pokemon')]
+    #[ORM\ManyToOne(inversedBy: 'pokemon')]
     private ?Team $team = null;
 
     public function __construct()
