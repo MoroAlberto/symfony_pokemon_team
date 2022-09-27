@@ -21,12 +21,9 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 class TeamController extends AbstractController
 {
     #[Route('/team', name: 'homepage_team')]
-    #[Route('/', name: 'default')]
     public function index(Request $request): Response
     {
-        return $this->render('team/index.html.twig', [
-            'controller_name' => 'TeamController',
-        ]);
+        return $this->redirectToRoute('app_default');
     }
 
     /**

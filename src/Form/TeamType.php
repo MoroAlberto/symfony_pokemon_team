@@ -15,7 +15,6 @@ class TeamType extends AbstractType
     {
         $builder
             ->add('name',TextType::class)
-            ->add('created_at', DateType::class)
         ;
     }
 

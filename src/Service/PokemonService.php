@@ -5,6 +5,8 @@ namespace App\Service;
 use App\Entity\Ability;
 use App\Entity\Pokemon;
 use App\Entity\Type;
+use App\Repository\AbilityRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
@@ -16,10 +18,12 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class PokemonService
 {
     private HttpClientInterface $client;
+    private EntityManagerInterface $entityManager;
 
-    public function __construct(HttpClientInterface $client)
+    public function __construct(HttpClientInterface $client,  EntityManagerInterface $entityManager)
     {
         $this->client = $client;
+        $this->entityManager = $entityManager;
     }
 
     /**
@@ -36,18 +40,25 @@ class PokemonService
         $pokemon->setName($randomPokemon['name']);
         $pokemon->setBaseExperience($randomPokemon['base_experience']);
         $pokemon->setSprite($randomPokemon['sprites']['front_default']);
+        $this->entityManager->persist($pokemon);//not sure
         foreach ($randomPokemon['abilities'] as $abilityArray) {
             $ability = new Ability();
             $ability->setName($abilityArray['ability']['name']);
             $ability->addPokemon($pokemon);
+            $this->entityManager->persist($ability);
+            $this->entityManager->flush();
             $pokemon->addAbility($ability);
         }
         foreach ($randomPokemon['types'] as $typeArray) {
             $type = new Type();
             $type->setName($typeArray['type']['name']);
             $type->addPokemon($pokemon);
+            $this->entityManager->persist($type);
+            $this->entityManager->flush();
             $pokemon->addType($type);
         }
+        $this->entityManager->persist($pokemon);
+        $this->entityManager->flush();
         return $pokemon;
     }
 
