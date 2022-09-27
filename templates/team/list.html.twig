@@ -35,10 +35,17 @@
                         {% endfor %}
                         {{ sum }}</td>
                     <td>
-                        <ul>{% for pokemon in team.pokemon %}
+                        <ul>
+                            {% set UniqueTypes = [] %}
+                            {% for pokemon in team.pokemon %}
                                 {% for type in pokemon.types %}
-                                    <li> {{ type.name }}</li>
+                                    {% if type.name not in UniqueTypes %}
+                                        {% set UniqueTypes = UniqueTypes|merge([type.name]) %}
+                                    {% endif %}
                                 {% endfor %}
+                            {% endfor %}
+                            {% for typeName in UniqueTypes %}
+                                <li> {{ typeName }}</li>
                             {% endfor %}
                         </ul>
                     </td>
