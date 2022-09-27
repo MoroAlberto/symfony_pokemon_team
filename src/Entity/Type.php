@@ -43,13 +43,6 @@ class Type
         return $this;
     }
 
-    /**
-     * @return Collection<int, Pokemon>
-     */
-    public function getPokemon(): Collection
-    {
-        return $this->pokemon;
-    }
 
     public function addPokemon(Pokemon $pokemon): self
     {

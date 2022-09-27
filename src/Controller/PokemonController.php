@@ -28,33 +28,13 @@ class PokemonController extends AbstractController
      * @throws ClientExceptionInterface
      */
     #[Route('/pokemon/new', name: 'new_pokemon')]
-    public function newPokemon(PokemonService $pokemonService): JsonResponse
+    public function newPokemon(PokemonService $pokemonService): Response
     {
         $pokemon = $pokemonService->newPokemon();
-        /*$encoders = [new XmlEncoder(), new JsonEncoder()];
+        $encoders = [new XmlEncoder(), new JsonEncoder()];
         $normalizers = [new ObjectNormalizer()];
         $serializer = new Serializer($normalizers, $encoders);
-        $jsonContent = $serializer->serialize($pokemon, 'json');
-        dd($jsonContent);*/
-        $arrayForJson = array(
-          'name' => $pokemon->getName(),
-          'sprite' => $pokemon->getSprite(),
-          'base_experience' => $pokemon->getBaseExperience(),
-          'types' => $pokemon->getTypes(),
-          'abilities' => $pokemon->getAbilities()
-        );
-        return new JsonResponse($arrayForJson);
-    }
-
-    /**
-     * @throws TransportExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws ClientExceptionInterface
-     */
-    public function getRandomPokemon(PokemonService $pokemonService): Pokemon
-    {
-        return $pokemonService->newPokemon();
+        $serializedEntity = $serializer->serialize($pokemon, 'json');
+        return new Response($serializedEntity);
     }
 }

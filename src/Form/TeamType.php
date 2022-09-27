@@ -4,7 +4,7 @@ namespace App\Form;
 
 use App\Entity\Team;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -15,7 +15,10 @@ class TeamType extends AbstractType
     {
         $builder
             ->add('name',TextType::class)
-        ;
+            ->add('ajaxString',HiddenType::class, [
+                'mapped' => false,
+                'attr' => ['class' => 'hidden-field', 'value' => '']
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

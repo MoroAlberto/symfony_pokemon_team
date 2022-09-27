@@ -27,25 +27,6 @@ class TeamService
     }
 
     /**
-     * @throws TransportExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws ClientExceptionInterface
-     */
-    public function addPokemonListToTeam($entityManager, Team $team): Team
-    {
-        for ($i = 1; $i <= 6; $i++) {
-            $pokemonService = new PokemonService(HttpClient::create());
-            $pokemon = $pokemonService->newPokemon();
-            $entityManager->persist($pokemon);
-            $entityManager->flush();
-            $team->addPokemon($pokemon);
-        }
-        return $team;
-    }
-
-    /**
      * @throws InvalidArgumentException
      */
     public function getTeamsCache()

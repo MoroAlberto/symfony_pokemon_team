@@ -6,6 +6,7 @@ use App\Entity\Ability;
 use App\Entity\Pokemon;
 use App\Entity\Type;
 use App\Repository\AbilityRepository;
+use App\Repository\TypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
@@ -19,11 +20,15 @@ class PokemonService
 {
     private HttpClientInterface $client;
     private EntityManagerInterface $entityManager;
+    private TypeRepository $typeRepository;
+    private AbilityRepository $abilityRepository;
 
-    public function __construct(HttpClientInterface $client,  EntityManagerInterface $entityManager)
+    public function __construct(HttpClientInterface $client, EntityManagerInterface $entityManager, TypeRepository $typeRepository ,AbilityRepository $abilityRepository)
     {
         $this->client = $client;
         $this->entityManager = $entityManager;
+        $this->typeRepository = $typeRepository;
+        $this->abilityRepository = $abilityRepository;
     }
 
     /**
@@ -40,25 +45,18 @@ class PokemonService
         $pokemon->setName($randomPokemon['name']);
         $pokemon->setBaseExperience($randomPokemon['base_experience']);
         $pokemon->setSprite($randomPokemon['sprites']['front_default']);
-        $this->entityManager->persist($pokemon);//not sure
         foreach ($randomPokemon['abilities'] as $abilityArray) {
             $ability = new Ability();
             $ability->setName($abilityArray['ability']['name']);
             $ability->addPokemon($pokemon);
-            $this->entityManager->persist($ability);
-            $this->entityManager->flush();
             $pokemon->addAbility($ability);
         }
         foreach ($randomPokemon['types'] as $typeArray) {
             $type = new Type();
             $type->setName($typeArray['type']['name']);
             $type->addPokemon($pokemon);
-            $this->entityManager->persist($type);
-            $this->entityManager->flush();
             $pokemon->addType($type);
         }
-        $this->entityManager->persist($pokemon);
-        $this->entityManager->flush();
         return $pokemon;
     }
 
@@ -87,4 +85,47 @@ class PokemonService
             throw new Exception('Error with pokemon API ' . $statusCode);
         }
     }
+
+    public function addPokemonList($team, $pokemonJsonList): void
+    {
+        //$serializer->deserialize($serializedEntity, Pokemon::class, 'json');
+        //can't use because I didn't pass "abilities" value for class "App\Entity\Pokemon": Expected argument of type "App\Entity\Ability", "array" given at property path "abilities".
+        $pokemonJsonArray = json_decode("[".$pokemonJsonList."]");
+        foreach ($pokemonJsonArray as $pokemonArray) {
+            $pokemon = new Pokemon();
+            $pokemon->setName($pokemonArray->name);
+            $pokemon->setBaseExperience($pokemonArray->baseExperience);
+            $pokemon->setSprite($pokemonArray->sprite);
+            $this->entityManager->persist($pokemon);
+            foreach ($pokemonArray->abilities as $abilityArray) {
+                $ability = $this->abilityRepository->findOneBy(['name' => $abilityArray->name]);
+                if ($ability == null) {
+                    $ability = new Ability();
+                    $ability->setName($abilityArray->name);
+                }
+                $ability->addPokemon($pokemon);
+                $this->entityManager->persist($ability);
+                $this->entityManager->flush();
+                $pokemon->addAbility($ability);
+            }
+
+            foreach ($pokemonArray->types as $typeArray) {
+                $type = $this->typeRepository->findOneBy(['name' => $typeArray->name]);
+                if ($type == null) {
+                    $type = new Type();
+                    $type->setName( $typeArray->name);
+                }
+                $type->addPokemon($pokemon);
+                $this->entityManager->persist($type);
+                $this->entityManager->flush();
+                $pokemon->addType($type);
+            }
+            $this->entityManager->persist($pokemon);
+            $this->entityManager->flush();
+            $team->addPokemon($pokemon);
+        }
+        $this->entityManager->persist($team);
+        $this->entityManager->flush();
+    }
+
 }

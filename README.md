@@ -17,7 +17,7 @@ You can install this program by executing the following commands:
 ```bash
 git clone https://github.com/MoroAlberto/symfony_pokemon_team.git
 docker-compose up -d
-symfony server:start
+symfony server:start -d
 symfony console doctrine:schema:create ?
 ```
 

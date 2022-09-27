@@ -4,25 +4,16 @@
 
 {% block body %}
     <h1 class="display-5 fw-bold">Create team!</h1>
-    {{ form_start(form) }}
+    <p class="col-md-8 fs-4">A real Poke master wins with any Pokémon, let them choose at random.<br>
+        Pressing the "Gotta Catch 'Em All" button, when you are satisfied save your team!</p>
+    <p></p>
+    {{ form_start(form, {'attr': {'id': 'formTeam'}}) }}
     {{ form_rest(form) }}
 
-    <div class="container mx-auto mt-4">
+    <div class="container mx-auto mt-4" id="PokemonTeam">
         <div class="row">
             <div class="col-md-4">
-                <div class="card" style="width: 18rem;" id="Pokemon1">
-                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/503.png"
-                         class="card-img-top" alt="Poke ball">
-                    <div class="card-body">
-                        <h5 class="card-title">Samurott</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">238</h6>
-                        <p class="card-text">Abilities: Torrent, Shell-armor</p>
-                        <p class="card-text">Types: Water</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card" style="width: 18rem;">
+                <div class="card free" style="width: 18rem;">
                     <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
                          class="card-img-top" alt="Poke ball">
                     <div class="card-body">
@@ -34,7 +25,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card" style="width: 18rem;">
+                <div class="card free" style="width: 18rem;">
                     <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
                          class="card-img-top" alt="Poke ball">
                     <div class="card-body">
@@ -46,7 +37,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card" style="width: 18rem;">
+                <div class="card free" style="width: 18rem;">
                     <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
                          class="card-img-top" alt="Poke ball">
                     <div class="card-body">
@@ -58,7 +49,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card" style="width: 18rem;">
+                <div class="card free" style="width: 18rem;">
                     <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
                          class="card-img-top" alt="Poke ball">
                     <div class="card-body">
@@ -70,7 +61,19 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card" style="width: 18rem;">
+                <div class="card free" style="width: 18rem;">
+                    <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
+                         class="card-img-top" alt="Poke ball">
+                    <div class="card-body">
+                        <h5 class="card-title">Pokemon</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">EXP</h6>
+                        <p class="card-text">Abilities:</p>
+                        <p class="card-text">Types:</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card free" style="width: 18rem;">
                     <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
                          class="card-img-top" alt="Poke ball">
                     <div class="card-body">
@@ -83,23 +86,62 @@
             </div>
         </div>
     </div>
-    <a class="btn btn-primary" name="Insert" onclick="getNewPokemon()">Gotta Catch 'Em All</a>
+    <a class="btn btn-primary" onclick="addPokemonToTeam()">Gotta Catch 'Em All</a>
+    <button class="btn btn-success" name="Insert" type="submit">Save team</button>
     <a href="/team/create" class="btn btn-secondary" style="float: right">Reset</a>
     <a href="/team" class="btn btn-secondary" style="float: right; margin-right: 2px">Homepage</a>
     {{ form_end(form) }}
     <script type="text/javascript">
-        function getNewPokemon() {
-            jQuery.get("/pokemon/new", function (data) {
+        function addPokemonToTeam() {
+            $.getJSON("/pokemon/new", function (data) {
                 let i;
                 let pokemon = '<img src="' + data.sprite + '" class="card-img-top" alt="' + data.name + '">' +
                     '<div class="card-body">' +
                     '<h5 class="card-title">' + data.name + '</h5>' +
-                    '<h6 class="card-subtitle mb-2 text-muted">' + data.base_experience + '</h6>' +
-                    '<p class="card-text">Abilities: ';
+                    '<h6 class="card-subtitle mb-2 text-muted">' + data.baseExperience + '</h6>' +
+                    '<p class="card-text">Abilities:';
+                for (i = 0; i < data.abilities.length;) {
+                    pokemon += ' ' + data.abilities[i]['name'];
+                    i++;
+                    if (data.abilities.length !== i) {
+                        pokemon += ',';
+                    }
+                }
+                pokemon.substring(0, pokemon.length - 1);
                 pokemon += '</p><p class="card-text">Types: ';
+                for (i = 0; i < data.types.length;) {
+                    pokemon += ' ' + data.types[i]['name'];
+                    i++;
+                    if (data.types.length !== i) {
+                        pokemon += ',';
+                    }
+                }
+                pokemon.substring(0, pokemon.length - 1);
                 pokemon += '</p></div>';
-                $("#Pokemon1").html(pokemon);
+                const slot = $("#PokemonTeam div.free").first();
+                if (slot.length <= 0) {
+                    alert("Error: A trainer cannot own more than 6 pokemon");
+                }
+                slot.removeClass("free");
+                slot.html(pokemon);
+                const HiddenPokemonList = $("#team_ajaxString");
+                if (HiddenPokemonList.val() === "") {
+                    HiddenPokemonList.val(JSON.stringify(data));
+                } else {
+                    HiddenPokemonList.val(HiddenPokemonList.val() + "," + JSON.stringify(data));
+                }
             });
         }
+
+        $("form#formTeam").submit(function (event) {
+            event.preventDefault();
+            const form = this;
+            const slot = $("#PokemonTeam div.free");
+            if (slot.length >= 6) {
+                alert("Error: Please add at least one Pokemon on your team. Pressing the button Gotta Catch 'Em All");
+                return false;
+            }
+            form.submit();
+        });
     </script>
 {% endblock %}
