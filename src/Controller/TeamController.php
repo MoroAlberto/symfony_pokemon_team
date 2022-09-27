@@ -9,6 +9,7 @@ use App\Repository\TeamRepository;
 use App\Repository\TypeRepository;
 use App\Service\PokemonService;
 use App\Service\TeamService;
+use App\Service\TypeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -69,11 +70,13 @@ class TeamController extends AbstractController
      * @throws InvalidArgumentException
      */
     #[Route('/team/list', name: 'list_teams')]
-    public function listTeams(TeamService $teamService, TeamRepository $teamRepository): Response
+    public function listTeams(TeamService $teamService, TypeService $typeService): Response
     {
         $teams = $teamService->getTeamsCache();
+        $types = $typeService->getTypeCached();
         return $this->render('team/list.html.twig', [
             'teams' => $teams,
+            'types' => $types
         ]);
     }
 
