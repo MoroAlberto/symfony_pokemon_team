@@ -9,6 +9,8 @@ use App\Repository\AbilityRepository;
 use App\Repository\TypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
+use Psr\Cache\InvalidArgumentException;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -22,6 +24,7 @@ class PokemonService
     private EntityManagerInterface $entityManager;
     private TypeRepository $typeRepository;
     private AbilityRepository $abilityRepository;
+    private FilesystemAdapter $cache;
 
     public function __construct(HttpClientInterface $client, EntityManagerInterface $entityManager, TypeRepository $typeRepository ,AbilityRepository $abilityRepository)
     {
@@ -29,6 +32,7 @@ class PokemonService
         $this->entityManager = $entityManager;
         $this->typeRepository = $typeRepository;
         $this->abilityRepository = $abilityRepository;
+        $this->cache = new FilesystemAdapter();
     }
 
     /**
@@ -76,8 +80,6 @@ class PokemonService
             'GET',
             'https://pokeapi.co/api/v2/pokemon/' . $randId . '/'
         );
-        //$contentType = $response->getHeaders()['content-type'][0];
-        //$contentType = 'application/json'
         $statusCode = $response->getStatusCode();
         if ($statusCode == 200) {
             return $response->toArray();
@@ -86,6 +88,9 @@ class PokemonService
         }
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function addPokemonList($team, $pokemonJsonList): void
     {
         //$serializer->deserialize($serializedEntity, Pokemon::class, 'json');
@@ -108,7 +113,6 @@ class PokemonService
                 $this->entityManager->flush();
                 $pokemon->addAbility($ability);
             }
-
             foreach ($pokemonArray->types as $typeArray) {
                 $type = $this->typeRepository->findOneBy(['name' => $typeArray->name]);
                 if ($type == null) {
@@ -126,6 +130,8 @@ class PokemonService
         }
         $this->entityManager->persist($team);
         $this->entityManager->flush();
+        $this->cache->delete('team_key');
+        $this->cache->delete('type_key');
     }
 
 }

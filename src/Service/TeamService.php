@@ -3,14 +3,7 @@
 namespace App\Service;
 
 use Psr\Cache\InvalidArgumentException;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\Cache\ItemInterface;
-use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
-use App\Entity\Team;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use App\Repository\TeamRepository;
 
@@ -38,11 +31,7 @@ class TeamService
                 array('created_at' => 'ASC')
             );
             foreach ($teams as $team) {
-                foreach ($team->getPokemon() as $pokemon) {
-                    foreach ($pokemon->getTypes() as $type) {
-                        //if I don't do this shit I don't cache collection
-                    }
-                }
+                $team->typeList = $team->getAllPokemonType();
             }
             return $teams;
         });

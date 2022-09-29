@@ -32,7 +32,7 @@ class TeamController extends AbstractController
     /**
      * @throws RedirectionExceptionInterface
      * @throws ClientExceptionInterface
-     * @throws ServerExceptionInterface
+     * @throws ServerExceptionInterface|InvalidArgumentException
      */
     #[Route('/team/create', name: 'create_team')]
     public function createTeam(
@@ -54,10 +54,10 @@ class TeamController extends AbstractController
             $pokemonService = new PokemonService(HttpClient::create(), $entityManager, $typeRepository,
                 $abilityRepository);
             $pokemonService->addPokemonList($team, $pokemonList);
-//            $this->addFlash(
-//                'success',
-//                'Your changes were saved!'
-//            );
+            $this->addFlash(
+                'success',
+                'Your changes were saved!'
+            );
             return $this->redirectToRoute('list_teams');
         }
         return $this->render('team/create.html.twig', [
@@ -74,6 +74,7 @@ class TeamController extends AbstractController
     {
         $teams = $teamService->getTeamsCache();
         $types = $typeService->getTypeCached();
+
         return $this->render('team/list.html.twig', [
             'teams' => $teams,
             'types' => $types
@@ -97,10 +98,8 @@ class TeamController extends AbstractController
             $entityManager->flush();
             return $this->redirectToRoute('list_teams');
         }
-
         return $this->render('team/edit.html.twig', [
             'form' => $form->createView()
         ]);
     }
-
 }

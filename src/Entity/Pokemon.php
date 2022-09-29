@@ -30,7 +30,7 @@ class Pokemon
     #[ORM\ManyToMany(targetEntity: Type::class, mappedBy: 'pokemon')]
     private Collection $types;
 
-    #[ORM\ManyToOne(cascade: ['persist'], inversedBy: 'pokemon')]
+    #[ORM\ManyToOne(targetEntity:Team::class, cascade: ['persist'], inversedBy: 'pokemon')]
     private ?Team $team = null;
 
     public function __construct()

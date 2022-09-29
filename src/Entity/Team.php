@@ -11,6 +11,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: TeamRepository::class)]
 class Team
 {
+    public array $typeList;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -102,5 +104,19 @@ class Team
         }
 
         return $this;
+    }
+
+    public function getAllPokemonType(): array
+    {
+        $this->typeList = array();
+        foreach ($this->pokemon as $pokemon) {
+            foreach ($pokemon->getTypes() as $type) {
+                if (!in_array($type->getName(), $this->typeList)) {
+                    $this->typeList[$type->getId()] = $type->getName();
+                }
+            }
+        }
+        asort($this->typeList);
+        return $this->typeList;
     }
 }
