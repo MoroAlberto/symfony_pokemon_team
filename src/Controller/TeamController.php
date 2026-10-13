@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Entity\Team;
 use App\Form\TeamType;
 use App\Repository\AbilityRepository;
-use App\Repository\TeamRepository;
 use App\Repository\TypeRepository;
 use App\Service\PokemonService;
 use App\Service\TeamService;
@@ -16,7 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
@@ -44,7 +43,7 @@ class TeamController extends AbstractController
         $team = new Team();
         $team->setName('');
         $team->setCreatedAt(new \DateTime());
-        $team->setUpdatedAt(new \DateTimeImmutable());
+        $team->setUpdatedAt(new \DateTime());
 
         $form = $this->createForm(TeamType::class, $team);
         $form->handleRequest($request);
@@ -81,14 +80,12 @@ class TeamController extends AbstractController
         ]);
     }
 
-    #[Route('/team/{teamId}/edit', name: 'edit_team')]
+    #[Route('/team/{id}/edit', name: 'edit_team')]
     public function editTeam(
-        Team $teamId,
+        Team $team,
         Request $request,
-        EntityManagerInterface $entityManager,
-        TeamRepository $teamRepository
+        EntityManagerInterface $entityManager
     ): Response {
-        $team = $teamRepository->find($teamId);
         $form = $this->createForm(TeamType::class, $team);
         $form->remove('created_at');
         $form->handleRequest($request);

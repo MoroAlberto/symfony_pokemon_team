@@ -25,7 +25,7 @@ class Team
     private ?\DateTime $created_at = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $updated_at = null;
+    private ?\DateTime $updated_at = null;
 
     #[ORM\OneToMany(mappedBy: 'team', targetEntity: Pokemon::class)]
     private Collection $pokemon;
@@ -64,12 +64,12 @@ class Team
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeInterface
+    public function getUpdatedAt(): ?\DateTime
     {
         return $this->updated_at;
     }
 
-    public function setUpdatedAt(?\DateTimeInterface $updated_at): self
+    public function setUpdatedAt(?\DateTime $updated_at): self
     {
         $this->updated_at = $updated_at;
 
