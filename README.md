@@ -13,10 +13,13 @@ about some cool tools.
 
 ## Installation
 
+Requirements: PHP 8.4+ and Composer. The app is built on Symfony 7.4 LTS.
+
 You can install this program by executing the following commands:
 
 ```bash
 git clone https://github.com/MoroAlberto/symfony_pokemon_team.git
+composer install
 docker-compose up -d
 symfony server:start -d
 symfony console doctrine:schema:create
