@@ -13,7 +13,7 @@ about some cool tools.
 
 ## Installation
 
-Requirements: PHP 8.4+ and Composer. The app is built on Symfony 7.4 LTS.
+Requirements: PHP 8.5+ and Composer. The app is built on Symfony 8.1.
 
 You can install this program by executing the following commands:
 
