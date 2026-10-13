@@ -27,3 +27,15 @@ symfony console doctrine:schema:create
 
 After this, [go to localhost](http://127.0.0.1/) to create your Pokémon team to try to excel at the Pokémon
 tournament!.
+
+## Tests
+
+The tests use their own SQLite database (`var/test.db`) and a fake PokeAPI, so they need no network access:
+
+```bash
+vendor/bin/phpunit
+```
+
+- `tests/Unit`: entities, form and services in isolation
+- `tests/Integration`: services with the real container and database
+- `tests/Functional`: the pages, as a browser would use them

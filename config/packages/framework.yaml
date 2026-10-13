@@ -14,3 +14,6 @@ when@test:
         test: true
         session:
             storage_factory_id: session.storage.factory.mock_file
+        # Never call the real PokeAPI from the tests
+        http_client:
+            mock_response_factory: App\Tests\Mock\PokeApiMock
