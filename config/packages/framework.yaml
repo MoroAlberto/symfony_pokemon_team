@@ -9,6 +9,23 @@ framework:
         default_context:
             enable_max_depth: true
 
+    http_client:
+        scoped_clients:
+            # Injected as "HttpClientInterface $pokeapiClient", see PokemonService
+            pokeapi.client:
+                base_uri: 'https://pokeapi.co/api/v2/'
+                # The user is waiting for the "Gotta Catch 'Em All" button: give up when PokeAPI sends nothing
+                # for 3 seconds, or when a response takes more than 5 seconds. These limits apply to each attempt,
+                # so with the retry below the user waits about 10 seconds at worst.
+                timeout: 3
+                max_duration: 5
+                retry_failed:
+                    max_retries: 1
+                    delay: 300
+                    # Network errors and timeouts (0), and server errors that are often temporary. Not 429 and 503:
+                    # they usually come with a Retry-After header, and the client would wait as long as it says.
+                    http_codes: [0, 500, 502, 504]
+
 when@test:
     framework:
         test: true
@@ -17,3 +34,8 @@ when@test:
         # Never call the real PokeAPI from the tests
         http_client:
             mock_response_factory: App\Tests\Mock\PokeApiMock
+            scoped_clients:
+                pokeapi.client:
+                    # Retry at once, so that the tests don't wait
+                    retry_failed:
+                        delay: 0

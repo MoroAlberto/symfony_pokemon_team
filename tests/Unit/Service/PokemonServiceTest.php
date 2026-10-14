@@ -45,7 +45,7 @@ class PokemonServiceTest extends TestCase
 
             $this->assertGreaterThanOrEqual(1, $pokemon['apiId']);
             $this->assertLessThanOrEqual(PokemonService::MAX_POKEMON_ID, $pokemon['apiId']);
-            $this->assertSame(PokemonService::API_URL.$pokemon['apiId'].'/', $urls[$i]);
+            $this->assertSame('https://pokeapi.co/api/v2/pokemon/'.$pokemon['apiId'].'/', $urls[$i]);
         }
     }
 
@@ -90,7 +90,8 @@ class PokemonServiceTest extends TestCase
     private function createService(MockHttpClient $client): PokemonService
     {
         return new PokemonService(
-            $client,
+            // Same base URI as the pokeapi.client of config/packages/framework.yaml
+            $client->withOptions(['base_uri' => 'https://pokeapi.co/api/v2/']),
             $this->createStub(EntityManagerInterface::class),
             $this->createStub(TypeRepository::class),
             $this->createStub(AbilityRepository::class),

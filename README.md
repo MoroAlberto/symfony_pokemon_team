@@ -63,7 +63,9 @@ migrations as run instead, with `php bin/console doctrine:migrations:version --a
 ## How it works
 
 - **Catching**: the "Gotta Catch 'Em All" button asks the server for a Pokémon. The server picks a random one on
-  PokeAPI and keeps it in a *draft* of the team stored in the session (`src/Service/TeamDraft.php`).
+  PokeAPI and keeps it in a *draft* of the team stored in the session (`src/Service/TeamDraft.php`). The PokeAPI
+  client (`config/packages/framework.yaml`) gives up after 5 seconds and retries once on temporary errors, so a
+  slow or broken PokeAPI shows an error after about 10 seconds at worst, instead of blocking the page.
 - **Saving**: the browser only sends back the tokens of the Pokémon it shows. The server saves the matching Pokémon
   from the draft, so the Pokémon and their stats cannot be forged by the browser. A team has 1 to 6 Pokémon.
 - **Several tabs**: each create page has its own draft, so you can build several teams at the same time.

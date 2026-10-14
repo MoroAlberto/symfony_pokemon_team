@@ -150,6 +150,75 @@ class PokemonControllerTest extends FunctionalTestCase
         $this->assertSame([], $this->loggedErrors());
     }
 
+    public function testPokeApiIsCalledWithTimeouts(): void
+    {
+        $this->drawPokemon($this->openCreatePage());
+
+        // The user waits for the response: a slow PokeAPI must not block the page for a minute (PHP's default)
+        $this->assertSame(3.0, PokeApiMock::$lastOptions['timeout']);
+        $this->assertSame(5.0, PokeApiMock::$lastOptions['max_duration']);
+    }
+
+    public function testATemporaryPokeApiErrorIsRetried(): void
+    {
+        $draftId = $this->openCreatePage();
+        PokeApiMock::$failWithStatus = 502;
+        PokeApiMock::$failures = 1;
+
+        $pokemon = $this->drawPokemon($draftId);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertArrayHasKey('token', $pokemon);
+        $this->assertCount(2, PokeApiMock::$requests);
+    }
+
+    public function testATemporaryNetworkErrorIsRetried(): void
+    {
+        $draftId = $this->openCreatePage();
+        PokeApiMock::$failWithNetworkError = true;
+        PokeApiMock::$failures = 1;
+
+        $this->drawPokemon($draftId);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(2, PokeApiMock::$requests);
+    }
+
+    public function testPokeApiIsRetriedOnlyOnce(): void
+    {
+        $draftId = $this->openCreatePage();
+        PokeApiMock::$failWithStatus = 500;
+
+        $this->drawPokemon($draftId);
+
+        $this->assertResponseStatusCodeSame(502);
+        $this->assertCount(2, PokeApiMock::$requests);
+    }
+
+    public function testAnOverloadedPokeApiIsNotRetried(): void
+    {
+        // A 503 usually asks to come back later (Retry-After): waiting for it would block the page
+        $draftId = $this->openCreatePage();
+        PokeApiMock::$failWithStatus = 503;
+
+        $this->drawPokemon($draftId);
+
+        $this->assertResponseStatusCodeSame(502);
+        $this->assertCount(1, PokeApiMock::$requests);
+    }
+
+    public function testAMissingPokemonIsNotRetried(): void
+    {
+        // A 404 will not change by asking again
+        $draftId = $this->openCreatePage();
+        PokeApiMock::$failWithStatus = 404;
+
+        $this->drawPokemon($draftId);
+
+        $this->assertResponseStatusCodeSame(502);
+        $this->assertCount(1, PokeApiMock::$requests);
+    }
+
     public function testPokeApiNetworkErrorReturns502(): void
     {
         $draftId = $this->openCreatePage();

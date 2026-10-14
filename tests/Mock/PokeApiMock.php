@@ -16,15 +16,21 @@ class PokeApiMock
     /** HTTP status to return instead of a Pokémon, or null for a successful response */
     public static ?int $failWithStatus = null;
     public static bool $failWithNetworkError = false;
+    /** How many of the next requests fail as set above before PokeAPI works again, null for all of them */
+    public static ?int $failures = null;
     /** @var list<string> URLs requested so far */
     public static array $requests = [];
+    /** Options of the last request (timeout, max_duration...) */
+    public static array $lastOptions = [];
 
     public static function reset(): void
     {
         self::$pokemon = [];
         self::$failWithStatus = null;
         self::$failWithNetworkError = false;
+        self::$failures = null;
         self::$requests = [];
+        self::$lastOptions = [];
     }
 
     /**
@@ -49,11 +55,15 @@ class PokeApiMock
     public function __invoke(string $method, string $url, array $options = []): MockResponse
     {
         self::$requests[] = $url;
+        self::$lastOptions = $options;
 
-        if (self::$failWithNetworkError) {
-            return new MockResponse([new \RuntimeException('Network error')]);
+        $fails = (self::$failWithNetworkError || null !== self::$failWithStatus)
+            && (null === self::$failures || self::$failures-- > 0);
+        if ($fails && self::$failWithNetworkError) {
+            // Fails before any response, like a refused connection or a timeout
+            return new MockResponse('', ['error' => 'Network error']);
         }
-        if (null !== self::$failWithStatus) {
+        if ($fails && null !== self::$failWithStatus) {
             return new MockResponse('Error', ['http_code' => self::$failWithStatus]);
         }
 

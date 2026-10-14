@@ -15,12 +15,11 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class PokemonService
 {
-    public const API_URL = 'https://pokeapi.co/api/v2/pokemon/';
     // Highest national Pokédex number available on PokeAPI
     public const MAX_POKEMON_ID = 1025;
 
     public function __construct(
-        private HttpClientInterface $client,
+        private HttpClientInterface $pokeapiClient,
         private EntityManagerInterface $entityManager,
         private TypeRepository $typeRepository,
         private AbilityRepository $abilityRepository,
@@ -39,7 +38,8 @@ class PokemonService
         $apiId = random_int(1, self::MAX_POKEMON_ID);
 
         try {
-            $response = $this->client->request('GET', self::API_URL.$apiId.'/');
+            // Relative to the base_uri of the pokeapi.client (config/packages/framework.yaml)
+            $response = $this->pokeapiClient->request('GET', 'pokemon/'.$apiId.'/');
             if (200 !== $response->getStatusCode()) {
                 throw new PokeApiException('Error with pokemon API '.$response->getStatusCode());
             }
