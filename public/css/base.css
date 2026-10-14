@@ -1,8 +1,78 @@
 body {
-    background: #f0f0f0 !important;
+    background: #f3f4f6;
 }
-.card {
-    background: #d2d2d2;
-    border: 1px solid #000;
-    margin-bottom: 2rem;
+
+.app-navbar {
+    background: #c62828;
+}
+
+/* Pokémon cards on the create page */
+.pokemon-card .pokemon-sprite {
+    width: 120px;
+    height: 120px;
+    margin: 0.5rem auto 0;
+    image-rendering: pixelated;
+}
+
+.empty-slot {
+    min-height: 220px;
+    border: 2px dashed var(--bs-border-color);
+    background: transparent;
+}
+
+.empty-slot img {
+    opacity: 0.35;
+    filter: grayscale(1);
+}
+
+/* Sprites in the list of teams */
+.team-sprites img {
+    image-rendering: pixelated;
+}
+
+/* Type badges, with the usual colors of each type */
+.type-badge,
+.type-filter {
+    color: #fff;
+    text-transform: capitalize;
+    text-shadow: 0 1px 1px rgb(0 0 0 / 0.35);
+    background-color: var(--type-color, #68a090);
+}
+
+.type-filter,
+.type-filter:hover,
+.btn-check:checked + .type-filter {
+    color: #fff;
+    background-color: var(--type-color, #68a090);
+    border-color: transparent;
+}
+
+.btn-check:not(:checked) + .type-filter {
+    opacity: 0.35;
+}
+
+.type-normal { --type-color: #a8a77a; }
+.type-fire { --type-color: #ee8130; }
+.type-water { --type-color: #6390f0; }
+.type-electric { --type-color: #d4b106; }
+.type-grass { --type-color: #5fa83a; }
+.type-ice { --type-color: #5ec4c0; }
+.type-fighting { --type-color: #c22e28; }
+.type-poison { --type-color: #a33ea1; }
+.type-ground { --type-color: #c9a33e; }
+.type-flying { --type-color: #8f75e6; }
+.type-psychic { --type-color: #f95587; }
+.type-bug { --type-color: #94a516; }
+.type-rock { --type-color: #b6a136; }
+.type-ghost { --type-color: #735797; }
+.type-dragon { --type-color: #6f35fc; }
+.type-dark { --type-color: #705746; }
+.type-steel { --type-color: #9a9ab5; }
+.type-fairy { --type-color: #d685ad; }
+
+/* Error pages */
+.error-pokeball {
+    filter: grayscale(1);
+    opacity: 0.5;
+    transform: rotate(-20deg);
 }

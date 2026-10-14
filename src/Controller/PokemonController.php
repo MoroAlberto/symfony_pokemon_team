@@ -2,37 +2,56 @@
 
 namespace App\Controller;
 
+use App\Exception\InvalidTeamDraftException;
+use App\Exception\PokeApiException;
 use App\Service\PokemonService;
+use App\Service\TeamDraft;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Exception\JsonException;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
-use Symfony\Component\Serializer\Serializer;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Encoder\XmlEncoder;
 
 class PokemonController extends AbstractController
 {
     /**
-     * @throws TransportExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws ClientExceptionInterface
+     * Draws a random Pokémon and adds it to the team being created.
+     *
+     * Expects a JSON body: {"draft": "<draft id of the page>", "keep": ["<tokens of the Pokémon shown on the page>"]}
      */
-    #[Route('/pokemon/new', name: 'new_pokemon')]
-    public function newPokemon(PokemonService $pokemonService): Response
-    {
-        $pokemon = $pokemonService->newPokemon();
-        $encoders = [new XmlEncoder(), new JsonEncoder()];
-        $normalizers = [new ObjectNormalizer()];
-        $serializer = new Serializer($normalizers, $encoders);
-        $serializedEntity = $serializer->serialize($pokemon, 'json');
-        return new Response($serializedEntity);
+    #[Route('/pokemon/new', name: 'new_pokemon', methods: ['POST'])]
+    public function newPokemon(
+        Request $request,
+        PokemonService $pokemonService,
+        TeamDraft $teamDraft,
+        LoggerInterface $logger,
+    ): JsonResponse {
+        try {
+            $body = $request->toArray();
+        } catch (JsonException) {
+            return $this->json(['error' => 'Invalid request.'], Response::HTTP_BAD_REQUEST);
+        }
+        $draftId = \is_string($body['draft'] ?? null) ? $body['draft'] : '';
+
+        try {
+            if (\is_array($body['keep'] ?? null)) {
+                $teamDraft->retain($draftId, $body['keep']);
+            }
+            $pokemon = $teamDraft->add($draftId, $pokemonService->fetchRandomPokemon(...));
+        } catch (InvalidTeamDraftException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        } catch (PokeApiException $e) {
+            // The browser only gets a generic message, the details are kept in the logs
+            $logger->error('Unable to draw a Pokémon: {message}', ['message' => $e->getMessage(), 'exception' => $e]);
+
+            return $this->json(
+                ['error' => 'The Pokémon API is not available, please try again later.'],
+                Response::HTTP_BAD_GATEWAY
+            );
+        }
+
+        return $this->json($pokemon);
     }
 }

@@ -7,10 +7,13 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: TeamRepository::class)]
 class Team
 {
+    public const MAX_POKEMON = 6;
+
     public array $typeList;
 
     #[ORM\Id]
@@ -19,6 +22,8 @@ class Team
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -47,7 +52,7 @@ class Team
 
     public function setName(string $name): self
     {
-        $this->name = $name;
+        $this->name = mb_trim($name);
 
         return $this;
     }

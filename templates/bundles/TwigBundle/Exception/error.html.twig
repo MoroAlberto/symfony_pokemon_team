@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Something went wrong{% endblock %}
+
+{% block body %}
+    <div class="p-4 p-md-5 bg-body rounded-3 shadow-sm text-center">
+        <img src="{{ asset('favicon.ico') }}" width="96" height="96" alt="" class="mb-3 error-pokeball">
+        <h1 class="display-6 fw-bold">Something went wrong</h1>
+        <p class="fs-5 text-body-secondary">
+            Error {{ status_code }}: your Pokémon is not feeling well. Please try again in a moment.
+        </p>
+        <a href="{{ path('app_default') }}" class="btn btn-danger">Back to the homepage</a>
+    </div>
+{% endblock %}

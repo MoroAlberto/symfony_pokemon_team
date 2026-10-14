@@ -2,29 +2,38 @@
 
 namespace App\Service;
 
-use Symfony\Contracts\Cache\ItemInterface;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use App\Entity\Type;
 use App\Repository\TypeRepository;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class TypeService
 {
+    public const CACHE_KEY = 'type_key';
 
-    private FilesystemAdapter $cache;
-    private TypeRepository $typeRepository;
-
-    public function __construct(TypeRepository $typeRepository)
-    {
-        $this->cache = new FilesystemAdapter();
-        $this->typeRepository = $typeRepository;
+    public function __construct(
+        private TypeRepository $typeRepository,
+        private CacheInterface $cache,
+    ) {
     }
 
-    public function getTypeCached()
+    /**
+     * @return Type[]
+     */
+    public function getTypeCached(): array
     {
-        $value = $this->cache->get('type_key', function (ItemInterface $item) {
+        return $this->cache->get(self::CACHE_KEY, function (ItemInterface $item) {
             $item->expiresAfter(3600);
-            return $this->typeRepository->findBy(array());
+
+            return $this->typeRepository->findBy([], ['name' => 'ASC']);
         });
-        //$this->cache->delete('type_key');
-        return $value;
+    }
+
+    /**
+     * Must be called whenever types are added or removed.
+     */
+    public function invalidateCache(): void
+    {
+        $this->cache->delete(self::CACHE_KEY);
     }
 }

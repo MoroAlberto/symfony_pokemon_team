@@ -3,9 +3,15 @@
 {% block title %}Edit Pokémon team{% endblock %}
 
 {% block body %}
+    <h1 class="display-6 fw-bold mb-4">Edit team</h1>
     {{ form_start(form) }}
+    <div class="col-md-6">
+        {{ form_row(form.name, {'label': 'Team name'}) }}
+    </div>
     {{ form_rest(form) }}
-    <button type="submit" class="btn btn-primary" name="Edit">Edit team</button>
-    <a href="/team" class="btn btn-secondary" style="float: right; margin-right: 2px">Homepage</a>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary" name="Edit">Edit team</button>
+        <a href="{{ path('list_teams') }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
     {{ form_end(form) }}
 {% endblock %}

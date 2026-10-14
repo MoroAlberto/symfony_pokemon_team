@@ -1,0 +1,17 @@
+{# A drawn Pokémon. Without "pokemon", renders the empty markup that create.js fills (see the <template> tag). #}
+<div class="card h-100 shadow-sm pokemon-card" {% if token is defined %}data-token="{{ token }}"{% endif %}>
+    <img src="{{ pokemon.sprite ?? '' }}" class="card-img-top pokemon-sprite" alt="{{ pokemon.name ?? '' }}" data-field="sprite">
+    <div class="card-body">
+        <h5 class="card-title text-capitalize mb-1" data-field="name">{{ (pokemon.name ?? '')|replace({'-': ' '}) }}</h5>
+        <p class="small text-body-secondary mb-2">Base exp: <span data-field="baseExperience">{{ pokemon.baseExperience ?? '' }}</span></p>
+        <div class="d-flex flex-wrap gap-1 mb-2" data-field="types">
+            {% for type in pokemon.types ?? [] %}
+                {{ include('_type_badge.html.twig', {name: type}) }}
+            {% endfor %}
+        </div>
+        <p class="small mb-0 text-capitalize">
+            <span class="text-body-secondary">Abilities:</span>
+            <span data-field="abilities">{{ (pokemon.abilities ?? [])|map(a => a|replace({'-': ' '}))|join(', ') }}</span>
+        </p>
+    </div>
+</div>

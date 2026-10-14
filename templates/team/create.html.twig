@@ -3,93 +3,53 @@
 {% block title %}Create Pokémon team!{% endblock %}
 
 {% block body %}
-    <h1 class="display-5 fw-bold">Create team!</h1>
-    <p class="col-md-8 fs-4">A real Poke master wins with any Pokémon, let them choose at random.<br>
-        Pressing the "Gotta Catch 'Em All" button, when you are satisfied save your team!</p>
-    <p></p>
-    {{ form_start(form, {'attr': {'id': 'formTeam', 'onsubmit':'return validateForm();'}}) }}
-    {{ form_rest(form) }}
-    <div class="container mx-auto mt-4" id="PokemonTeam">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card free" style="width: 15rem;">
-                    <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
-                         class="card-img-top" alt="Poke ball">
-                    <div class="card-body">
-                        <h5 class="card-title">Pokemon</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">EXP</h6>
-                        <p class="card-text">Abilities:</p>
-                        <p class="card-text">Types:</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card free" style="width: 15rem;">
-                    <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
-                         class="card-img-top" alt="Poke ball">
-                    <div class="card-body">
-                        <h5 class="card-title">Pokemon</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">EXP</h6>
-                        <p class="card-text">Abilities:</p>
-                        <p class="card-text">Types:</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card free" style="width: 15rem;">
-                    <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
-                         class="card-img-top" alt="Poke ball">
-                    <div class="card-body">
-                        <h5 class="card-title">Pokemon</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">EXP</h6>
-                        <p class="card-text">Abilities:</p>
-                        <p class="card-text">Types:</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card free" style="width: 15rem;">
-                    <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
-                         class="card-img-top" alt="Poke ball">
-                    <div class="card-body">
-                        <h5 class="card-title">Pokemon</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">EXP</h6>
-                        <p class="card-text">Abilities:</p>
-                        <p class="card-text">Types:</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card free" style="width: 15rem;">
-                    <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
-                         class="card-img-top" alt="Poke ball">
-                    <div class="card-body">
-                        <h5 class="card-title">Pokemon</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">EXP</h6>
-                        <p class="card-text">Abilities:</p>
-                        <p class="card-text">Types:</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card free" style="width: 15rem;">
-                    <img src="https://orig00.deviantart.net/696e/f/2013/019/2/7/pokeball_by_zel_duh-d5s04qj.gif"
-                         class="card-img-top" alt="Poke ball">
-                    <div class="card-body">
-                        <h5 class="card-title">Pokemon</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">EXP</h6>
-                        <p class="card-text">Abilities:</p>
-                        <p class="card-text">Types:</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <h1 class="display-6 fw-bold">Create team!</h1>
+    <p class="text-body-secondary mb-4">A real Poke master wins with any Pokémon, let them choose at random.
+        Press the "Gotta Catch 'Em All" button and, when you are satisfied, save your team!</p>
+
+    {{ form_start(form, {'attr': {'id': 'formTeam'}}) }}
+    {{ form_errors(form) }}
+    <div class="col-md-6">
+        {{ form_row(form.name, {'label': 'Team name'}) }}
     </div>
-    <a class="btn btn-primary" onclick="addPokemonToTeam()">Gotta Catch 'Em All</a>
-    <button class="btn btn-success" name="Insert" type="submit">Save team</button>
-    <a href="/team/create" class="btn btn-secondary" style="float: right">Reset</a>
-    <a href="/team" class="btn btn-secondary" style="float: right; margin-right: 2px">Homepage</a>
+    {# autocomplete off: browsers must not restore an old draft on Back or reload #}
+    {{ form_widget(form.draft, {'value': draft_id, 'attr': {'data-team-draft': '', 'autocomplete': 'off'}}) }}
+    {{ form_widget(form.pokemonTokens, {'attr': {'data-pokemon-tokens': '', 'autocomplete': 'off'}}) }}
+
+    <div class="row row-cols-2 row-cols-md-3 g-3 my-3" id="PokemonTeam" data-new-pokemon-url="{{ path('new_pokemon') }}">
+        {% for token, pokemon in draft %}
+            <div class="col">
+                {{ include('team/_pokemon_card.html.twig', {pokemon: pokemon, token: token}) }}
+            </div>
+        {% endfor %}
+        {% if draft|length < max_pokemon %}
+            {% for i in 1 .. (max_pokemon - draft|length) %}
+                <div class="col">
+                    <div class="card h-100 free empty-slot">
+                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-body-secondary">
+                            <img src="{{ asset('favicon.ico') }}" width="48" height="48" alt="" class="mb-2">
+                            Empty slot
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-danger btn-lg" type="button" id="catchPokemon">Gotta Catch 'Em All</button>
+        <button class="btn btn-success btn-lg" name="Insert" type="submit">Save team</button>
+        <a href="{{ path('create_team') }}" class="btn btn-outline-secondary btn-lg ms-sm-auto">Reset</a>
+    </div>
     {{ form_end(form) }}
+
+    {# Markup used by create.js for the Pokémon it catches #}
+    <template id="pokemonCardTemplate">
+        {{ include('team/_pokemon_card.html.twig') }}
+    </template>
+    <template id="typeBadgeTemplate">
+        {{ include('_type_badge.html.twig', {name: ''}) }}
+    </template>
 {% endblock %}
 
 {% block footer_js %}

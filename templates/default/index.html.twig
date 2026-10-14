@@ -1,9 +1,13 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-    <h1 class="display-5 fw-bold">Welcome Trainer!</h1>
-    <p class="col-md-8 fs-4">A new Pokémon tournament is coming soon and you must create a strong team to
-        try to excel at the competition!</p>
-    <a href="/team/create" class="btn btn-primary btn-lg" type="button">Create new team</a>
-    <a href="/team/list" class="btn btn-primary btn-lg" type="button">List of teams</a>
+    <div class="p-4 p-md-5 bg-body rounded-3 shadow-sm">
+        <h1 class="display-5 fw-bold">Welcome Trainer!</h1>
+        <p class="col-lg-8 fs-5 text-body-secondary">A new Pokémon tournament is coming soon and you must create a
+            strong team to try to excel at the competition!</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ path('create_team') }}" class="btn btn-danger btn-lg">Create new team</a>
+            <a href="{{ path('list_teams') }}" class="btn btn-outline-secondary btn-lg">List of teams</a>
+        </div>
+    </div>
 {% endblock %}
