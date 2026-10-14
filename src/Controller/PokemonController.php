@@ -6,6 +6,7 @@ use App\Exception\InvalidTeamDraftException;
 use App\Exception\PokeApiException;
 use App\Service\PokemonService;
 use App\Service\TeamDraft;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,8 +22,12 @@ class PokemonController extends AbstractController
      * Expects a JSON body: {"draft": "<draft id of the page>", "keep": ["<tokens of the Pokémon shown on the page>"]}
      */
     #[Route('/pokemon/new', name: 'new_pokemon', methods: ['POST'])]
-    public function newPokemon(Request $request, PokemonService $pokemonService, TeamDraft $teamDraft): JsonResponse
-    {
+    public function newPokemon(
+        Request $request,
+        PokemonService $pokemonService,
+        TeamDraft $teamDraft,
+        LoggerInterface $logger,
+    ): JsonResponse {
         try {
             $body = $request->toArray();
         } catch (JsonException) {
@@ -37,7 +42,10 @@ class PokemonController extends AbstractController
             $pokemon = $teamDraft->add($draftId, $pokemonService->fetchRandomPokemon(...));
         } catch (InvalidTeamDraftException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-        } catch (PokeApiException) {
+        } catch (PokeApiException $e) {
+            // The browser only gets a generic message, the details are kept in the logs
+            $logger->error('Unable to draw a Pokémon: {message}', ['message' => $e->getMessage(), 'exception' => $e]);
+
             return $this->json(
                 ['error' => 'The Pokémon API is not available, please try again later.'],
                 Response::HTTP_BAD_GATEWAY

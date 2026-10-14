@@ -3,7 +3,11 @@
 namespace App\Tests\Functional;
 
 use App\Entity\Team;
+use App\Exception\PokeApiException;
 use App\Tests\Mock\PokeApiMock;
+use Monolog\Handler\TestHandler;
+use Monolog\Level;
+use Monolog\LogRecord;
 
 class PokemonControllerTest extends FunctionalTestCase
 {
@@ -123,6 +127,29 @@ class PokemonControllerTest extends FunctionalTestCase
         $this->assertStringContainsString('not available', $response['error']);
     }
 
+    public function testPokeApiErrorIsLogged(): void
+    {
+        $draftId = $this->openCreatePage();
+        PokeApiMock::$failWithStatus = 500;
+
+        $this->drawPokemon($draftId);
+
+        $errors = $this->loggedErrors();
+        $this->assertCount(1, $errors);
+        $this->assertStringContainsString('Error with pokemon API 500', $errors[0]->message);
+        $this->assertInstanceOf(PokeApiException::class, $errors[0]->context['exception']);
+    }
+
+    public function testInvalidDraftIsNotLoggedAsAnError(): void
+    {
+        $this->openCreatePage();
+
+        $this->drawPokemon('0123456789abcdef');
+
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertSame([], $this->loggedErrors());
+    }
+
     public function testPokeApiNetworkErrorReturns502(): void
     {
         $draftId = $this->openCreatePage();
@@ -156,5 +183,18 @@ class PokemonControllerTest extends FunctionalTestCase
             $this->drawPokemon($draftId);
             $this->assertResponseIsSuccessful();
         }
+    }
+
+    /**
+     * Records of level error or above logged during the last request.
+     *
+     * @return list<LogRecord>
+     */
+    private function loggedErrors(): array
+    {
+        /** @var TestHandler $handler */
+        $handler = static::getContainer()->get('monolog.handler.test');
+
+        return array_values(array_filter($handler->getRecords(), fn (LogRecord $record) => $record->level->isHigherThan(Level::Warning)));
     }
 }
