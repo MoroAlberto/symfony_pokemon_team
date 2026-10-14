@@ -16,8 +16,16 @@ abstract class FunctionalTestCase extends WebTestCase
 
     protected function setUp(): void
     {
-        $this->client = static::createClient();
+        $this->client = $this->createTestClient();
         $this->resetDatabase();
+    }
+
+    /**
+     * Creates the browser used by the tests, overridable to change the kernel options.
+     */
+    protected function createTestClient(): KernelBrowser
+    {
+        return static::createClient();
     }
 
     /**

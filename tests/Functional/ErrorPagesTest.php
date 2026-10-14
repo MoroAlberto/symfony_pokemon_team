@@ -2,18 +2,21 @@
 
 namespace App\Tests\Functional;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
 /**
  * The custom error pages are shown when debug is off, as in production.
  */
-class ErrorPagesTest extends WebTestCase
+class ErrorPagesTest extends FunctionalTestCase
 {
+    protected function createTestClient(): KernelBrowser
+    {
+        return static::createClient(['debug' => false]);
+    }
+
     public function testUnknownPageShowsTheCustom404Page(): void
     {
-        $client = static::createClient(['debug' => false]);
-
-        $crawler = $client->request('GET', '/does-not-exist');
+        $crawler = $this->client->request('GET', '/does-not-exist');
 
         $this->assertResponseStatusCodeSame(404);
         $this->assertSelectorTextContains('h1', 'Page not found');
@@ -23,9 +26,7 @@ class ErrorPagesTest extends WebTestCase
 
     public function testUnknownTeamShowsTheCustom404Page(): void
     {
-        $client = static::createClient(['debug' => false]);
-
-        $client->request('GET', '/team/999999/edit');
+        $this->client->request('GET', '/team/999999/edit');
 
         $this->assertResponseStatusCodeSame(404);
         $this->assertSelectorTextContains('h1', 'Page not found');
@@ -33,9 +34,7 @@ class ErrorPagesTest extends WebTestCase
 
     public function testOtherErrorsShowTheCustomErrorPage(): void
     {
-        $client = static::createClient(['debug' => false]);
-
-        $client->request('GET', '/pokemon/new');
+        $this->client->request('GET', '/pokemon/new');
 
         $this->assertResponseStatusCodeSame(405);
         $this->assertSelectorTextContains('h1', 'Something went wrong');

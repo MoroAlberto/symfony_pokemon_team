@@ -16,8 +16,8 @@ install: ## Build the PHP image and install the Composer dependencies
 	docker compose build
 	$(RUN) composer install
 
-db: ## Create or update the database schema
-	$(RUN) php bin/console doctrine:schema:update --force
+db: ## Create or update the database schema (runs the migrations)
+	$(RUN) php bin/console doctrine:migrations:migrate --no-interaction
 
 up: ## Start the app on http://localhost:8000 (APP_PORT=8001 make up for another port)
 	docker compose up -d

@@ -33,7 +33,7 @@ Type `make` to see all the commands:
 | `make up`      | Start the app (`APP_PORT=8001 make up` for another port)  |
 | `make down`    | Stop the app                                              |
 | `make test`    | Run the test suite                                        |
-| `make db`      | Create or update the database schema                      |
+| `make db`      | Create or update the database schema (runs the migrations)|
 | `make logs`    | Follow the web server logs                                |
 | `make shell`   | Open a shell in the PHP container                         |
 
@@ -43,9 +43,22 @@ With PHP 8.5+ (and the `pdo_sqlite` and `mbstring` extensions) and Composer:
 
 ```bash
 composer install
-php bin/console doctrine:schema:update --force
+php bin/console doctrine:migrations:migrate
 php -S localhost:8000 -t public
 ```
+
+### Changing the database schema
+
+The schema is versioned with [Doctrine migrations](https://symfony.com/bundles/DoctrineMigrationsBundle/current/index.html)
+in `migrations/`. After changing an entity, generate a migration, review it and run it:
+
+```bash
+php bin/console doctrine:migrations:diff
+php bin/console doctrine:migrations:migrate
+```
+
+A database created before the migrations existed (with `doctrine:schema:update`) already has the tables: mark the
+migrations as run instead, with `php bin/console doctrine:migrations:version --add --all`.
 
 ## How it works
 
