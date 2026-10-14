@@ -39,12 +39,13 @@
                 </thead>
                 <tbody>
                 {% for team in teams %}
-                    <tr id="team_id_{{ team.id }}" data-types="{{ team.typeList|join(' ') }}">
+                    {% set typeNames = team.allPokemonType %}
+                    <tr id="team_id_{{ team.id }}" data-types="{{ typeNames|join(' ') }}">
                         <th scope="row" class="text-body-secondary">{{ team.id }}</th>
                         <td class="fw-semibold">{{ team.name }}</td>
                         <td class="team-sprites">{% for pokemon in team.pokemon %}<img src="{{ pokemon.sprite }}" alt="{{ pokemon.name }}" title="{{ pokemon.name|replace({'-': ' '})|title }}" width="56" height="56"/>{% endfor %}</td>
                         <td>{{ team.pokemon|reduce((sum, pokemon) => sum + pokemon.baseExperience, 0) }}</td>
-                        <td><div class="d-flex flex-wrap gap-1">{% for typeName in team.typeList %}{{ include('_type_badge.html.twig', {name: typeName}) }}{% endfor %}</div></td>
+                        <td><div class="d-flex flex-wrap gap-1">{% for typeName in typeNames %}{{ include('_type_badge.html.twig', {name: typeName}) }}{% endfor %}</div></td>
                         <td class="text-nowrap">{{ team.createdAt|date('d-m-Y') }}</td>
                         <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ path('edit_team', {id: team.id}) }}">Edit</a></td>
                     </tr>

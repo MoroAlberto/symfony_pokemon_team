@@ -42,6 +42,21 @@ class TeamListTest extends FunctionalTestCase
         $this->assertSame('/team/'.$team->getId().'/edit', $cells->eq(5)->filter('a')->attr('href'));
     }
 
+    public function testTheNumberOfQueriesDoesNotGrowWithTheTeams(): void
+    {
+        $this->createTeam('Team 1', ['pikachu' => [112, ['electric']], 'squirtle' => [63, ['water']]]);
+        $queriesForOneTeam = $this->countQueriesOfTheList();
+
+        for ($i = 2; $i <= 5; ++$i) {
+            $this->createTeam('Team '.$i, ['pikachu' => [112, ['electric']], 'squirtle' => [63, ['water']]]);
+        }
+        $queriesForFiveTeams = $this->countQueriesOfTheList();
+
+        $this->assertSelectorCount(5, 'tbody tr');
+        // Without the joins of TeamRepository::findAllWithPokemonAndTypes(), each team would add 3 queries
+        $this->assertSame($queriesForOneTeam, $queriesForFiveTeams);
+    }
+
     public function testTeamsAreSortedByCreationDate(): void
     {
         $this->createTeam('Second', [], '2024-02-01');
@@ -109,5 +124,17 @@ class TeamListTest extends FunctionalTestCase
 
         $this->assertSelectorCount(1, '#typeFilter label');
         $this->assertSame('grass', $crawler->filter('#typeFilter label')->text());
+    }
+
+    private function countQueriesOfTheList(): int
+    {
+        // Start like a real request: no team already in memory, and only the queries of the request are counted
+        $this->getEntityManager()->clear();
+        static::getContainer()->get('doctrine.debug_data_holder')->reset();
+        $this->client->enableProfiler();
+        $this->client->request('GET', '/team/list');
+        $this->assertResponseIsSuccessful();
+
+        return $this->client->getProfile()->getCollector('db')->getQueryCount();
     }
 }

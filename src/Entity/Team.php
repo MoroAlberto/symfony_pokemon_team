@@ -14,8 +14,6 @@ class Team
 {
     public const MAX_POKEMON = 6;
 
-    public array $typeList;
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -111,17 +109,22 @@ class Team
         return $this;
     }
 
+    /**
+     * @return array<int, string> Names of the types of the Pokémon of the team, each once, sorted by name and indexed by id
+     */
     public function getAllPokemonType(): array
     {
-        $this->typeList = array();
+        $types = [];
         foreach ($this->pokemon as $pokemon) {
             foreach ($pokemon->getTypes() as $type) {
-                if (!in_array($type->getName(), $this->typeList)) {
-                    $this->typeList[$type->getId()] = $type->getName();
+                // By name, in case the same type was saved twice
+                if (!\in_array($type->getName(), $types, true)) {
+                    $types[$type->getId()] = $type->getName();
                 }
             }
         }
-        asort($this->typeList);
-        return $this->typeList;
+        asort($types);
+
+        return $types;
     }
 }

@@ -5,10 +5,11 @@ namespace App\Controller;
 use App\Entity\Team;
 use App\Exception\InvalidTeamDraftException;
 use App\Form\TeamType;
+use App\Repository\TeamRepository;
+use App\Repository\TypeRepository;
 use App\Service\PokemonService;
 use App\Service\TeamDraft;
 use App\Service\TeamService;
-use App\Service\TypeService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
@@ -73,11 +74,11 @@ class TeamController extends AbstractController
     }
 
     #[Route('/team/list', name: 'list_teams', methods: ['GET'])]
-    public function listTeams(TeamService $teamService, TypeService $typeService): Response
+    public function listTeams(TeamRepository $teamRepository, TypeRepository $typeRepository): Response
     {
         return $this->render('team/list.html.twig', [
-            'teams' => $teamService->getTeamsCache(),
-            'types' => $typeService->getTypeCached(),
+            'teams' => $teamRepository->findAllWithPokemonAndTypes(),
+            'types' => $typeRepository->findBy([], ['name' => 'ASC']),
         ]);
     }
 

@@ -67,8 +67,8 @@ migrations as run instead, with `php bin/console doctrine:migrations:version --a
 - **Saving**: the browser only sends back the tokens of the Pokémon it shows. The server saves the matching Pokémon
   from the draft, so the Pokémon and their stats cannot be forged by the browser. A team has 1 to 6 Pokémon.
 - **Several tabs**: each create page has its own draft, so you can build several teams at the same time.
-- **List**: the teams and the types are cached (`TeamService`, `TypeService`), and the cache is cleared whenever a
-  team is created or edited.
+- **List**: the teams, their Pokémon and their types are loaded in a single query
+  (`TeamRepository::findAllWithPokemonAndTypes()`).
 
 ## Tests
 

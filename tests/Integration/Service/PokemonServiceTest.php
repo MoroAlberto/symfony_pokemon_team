@@ -7,8 +7,6 @@ use App\Entity\Pokemon;
 use App\Entity\Team;
 use App\Entity\Type;
 use App\Service\PokemonService;
-use App\Service\TeamService;
-use App\Service\TypeService;
 use App\Tests\DatabaseTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -80,22 +78,6 @@ class PokemonServiceTest extends KernelTestCase
 
         $this->assertCount(2, $team->getPokemon());
         $this->assertSame(2, $this->getEntityManager()->getRepository(Pokemon::class)->count([]));
-    }
-
-    public function testAddPokemonToTeamRefreshesTheTeamListAndTheTypes(): void
-    {
-        // Review point 4: the caches used to be refreshed only by the controller
-        $teamService = static::getContainer()->get(TeamService::class);
-        $typeService = static::getContainer()->get(TypeService::class);
-        $this->assertSame([], $teamService->getTeamsCache());
-        $this->assertSame([], $typeService->getTypeCached());
-
-        $this->getService()->addPokemonToTeam($this->newTeam(), [
-            $this->pokemonData('pikachu', 112, ['static'], ['electric']),
-        ]);
-
-        $this->assertCount(1, $teamService->getTeamsCache());
-        $this->assertSame(['electric'], array_map(fn (Type $t) => $t->getName(), $typeService->getTypeCached()));
     }
 
     private function getService(): PokemonService

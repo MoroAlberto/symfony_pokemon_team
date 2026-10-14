@@ -24,8 +24,6 @@ class PokemonService
         private EntityManagerInterface $entityManager,
         private TypeRepository $typeRepository,
         private AbilityRepository $abilityRepository,
-        private TeamService $teamService,
-        private TypeService $typeService,
     ) {
     }
 
@@ -89,9 +87,6 @@ class PokemonService
 
         $this->entityManager->persist($team);
         $this->entityManager->flush();
-        // The team, and maybe new types, must show up in the cached lists
-        $this->teamService->invalidateCache();
-        $this->typeService->invalidateCache();
     }
 
     /**

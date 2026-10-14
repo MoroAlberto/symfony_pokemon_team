@@ -6,8 +6,6 @@ use App\Exception\PokeApiException;
 use App\Repository\AbilityRepository;
 use App\Repository\TypeRepository;
 use App\Service\PokemonService;
-use App\Service\TeamService;
-use App\Service\TypeService;
 use App\Tests\Mock\PokeApiMock;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -96,8 +94,6 @@ class PokemonServiceTest extends TestCase
             $this->createStub(EntityManagerInterface::class),
             $this->createStub(TypeRepository::class),
             $this->createStub(AbilityRepository::class),
-            $this->createStub(TeamService::class),
-            $this->createStub(TypeService::class),
         );
     }
 }

@@ -39,6 +39,28 @@ class TeamRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * All the teams, oldest first, with their Pokémon and the types of these Pokémon.
+     *
+     * The joins load everything in a single query: without them, Doctrine would run one more query
+     * for the Pokémon of each team, and one for the types of each Pokémon (the "N+1" problem).
+     *
+     * @return list<Team>
+     */
+    public function findAllWithPokemonAndTypes(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->leftJoin('t.pokemon', 'p')
+            ->addSelect('p')
+            ->leftJoin('p.types', 'ty')
+            ->addSelect('ty')
+            ->orderBy('t.created_at', 'ASC')
+            ->addOrderBy('t.id', 'ASC')
+            ->addOrderBy('p.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Team[] Returns an array of Team objects
 //     */

@@ -90,6 +90,15 @@ class TeamTest extends TestCase
         $this->assertSame([2 => 'fire', 3 => 'flying', 1 => 'water'], $team->getAllPokemonType());
     }
 
+    public function testGetAllPokemonTypeShowsATypeSavedTwiceOnlyOnce(): void
+    {
+        $team = new Team();
+        $team->addPokemon((new Pokemon())->addType($this->createType(1, 'fire')));
+        $team->addPokemon((new Pokemon())->addType($this->createType(2, 'fire')));
+
+        $this->assertSame([1 => 'fire'], $team->getAllPokemonType());
+    }
+
     private function createType(int $id, string $name): Type
     {
         $type = (new Type())->setName($name);

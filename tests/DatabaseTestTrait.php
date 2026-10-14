@@ -10,7 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 
 /**
- * Gives every test an empty database, an empty cache and a fresh fake PokeAPI.
+ * Gives every test an empty database and a fresh fake PokeAPI.
  * Must be used in a KernelTestCase (or WebTestCase, after creating the client).
  */
 trait DatabaseTestTrait
@@ -23,7 +23,6 @@ trait DatabaseTestTrait
         $schemaTool->dropDatabase();
         $schemaTool->createSchema($metadata);
 
-        static::getContainer()->get('cache.app')->clear();
         PokeApiMock::reset();
     }
 
