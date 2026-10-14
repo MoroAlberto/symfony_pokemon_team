@@ -32,6 +32,7 @@ class TeamValidationTest extends KernelTestCase
     {
         yield 'empty' => [''];
         yield 'blank' => ['   '];
+        yield 'Unicode blank' => ["\u{00A0}\u{3000}"];
         yield 'too long' => [str_repeat('a', 256)];
     }
 

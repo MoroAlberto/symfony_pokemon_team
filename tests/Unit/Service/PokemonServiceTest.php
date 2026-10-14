@@ -6,6 +6,8 @@ use App\Exception\PokeApiException;
 use App\Repository\AbilityRepository;
 use App\Repository\TypeRepository;
 use App\Service\PokemonService;
+use App\Service\TeamService;
+use App\Service\TypeService;
 use App\Tests\Mock\PokeApiMock;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -74,6 +76,17 @@ class PokemonServiceTest extends TestCase
         yield 'redirect' => [new MockResponse('', ['http_code' => 301])];
         yield 'network error' => [new MockResponse([new \RuntimeException('Network error')])];
         yield 'invalid JSON' => [new MockResponse('not json')];
+        // Review point 6: a successful response with an unexpected body
+        yield 'empty object' => [new MockResponse('{}')];
+        yield 'JSON list' => [new MockResponse('[1, 2]')];
+        yield 'missing types' => [new MockResponse('{"name": "missingno", "abilities": []}')];
+        yield 'name not a string' => [new MockResponse(json_encode(['name' => 42] + PokeApiMock::payload('x')))];
+        yield 'null ability' => [new MockResponse(json_encode(['abilities' => [null]] + PokeApiMock::payload('x')))];
+        yield 'type without name' => [new MockResponse(json_encode(['types' => [['type' => []]]] + PokeApiMock::payload('x')))];
+        // Review 2, point 8: lists sent as JSON objects
+        yield 'abilities as an object' => [new MockResponse(json_encode(['abilities' => ['a' => ['ability' => ['name' => 'static']]]] + PokeApiMock::payload('x')))];
+        yield 'types as an object' => [new MockResponse(json_encode(['types' => ['a' => ['type' => ['name' => 'electric']]]] + PokeApiMock::payload('x')))];
+        yield 'base experience not a number' => [new MockResponse(json_encode(['base_experience' => 'a lot'] + PokeApiMock::payload('x')))];
     }
 
     private function createService(MockHttpClient $client): PokemonService
@@ -83,6 +96,8 @@ class PokemonServiceTest extends TestCase
             $this->createStub(EntityManagerInterface::class),
             $this->createStub(TypeRepository::class),
             $this->createStub(AbilityRepository::class),
+            $this->createStub(TeamService::class),
+            $this->createStub(TypeService::class),
         );
     }
 }

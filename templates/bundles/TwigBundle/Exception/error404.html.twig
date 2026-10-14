@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Page not found{% endblock %}
+
+{% block body %}
+    <div class="p-4 p-md-5 bg-body rounded-3 shadow-sm text-center">
+        <img src="{{ asset('favicon.ico') }}" width="96" height="96" alt="" class="mb-3 error-pokeball">
+        <h1 class="display-6 fw-bold">Page not found</h1>
+        <p class="fs-5 text-body-secondary">A wild 404 appeared! This page fled, or maybe it was never caught.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a href="{{ path('app_default') }}" class="btn btn-danger">Back to the homepage</a>
+            <a href="{{ path('list_teams') }}" class="btn btn-outline-secondary">See your teams</a>
+        </div>
+    </div>
+{% endblock %}

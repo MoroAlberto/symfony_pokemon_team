@@ -9,9 +9,10 @@ class TeamListTest extends FunctionalTestCase
         $this->client->request('GET', '/team/list');
 
         $this->assertResponseIsSuccessful();
-        $this->assertSelectorTextContains('h1', 'List of created team');
+        $this->assertSelectorTextContains('h1', 'Your teams');
+        $this->assertSelectorTextContains('main', 'No team yet');
         $this->assertSelectorCount(0, 'tbody tr');
-        $this->assertSelectorCount(0, '#selectPokemonType option');
+        $this->assertSelectorNotExists('#typeFilter');
     }
 
     public function testListShowsTheTeams(): void
@@ -32,10 +33,11 @@ class TeamListTest extends FunctionalTestCase
         $this->assertCount(3, $cells->eq(1)->filter('img'));
         $this->assertSame('184', $cells->eq(2)->text(), 'Sum of the base experience');
         $this->assertSame(
-            ['https://veekun.com/dex/media/types/en/normal.png', 'https://veekun.com/dex/media/types/en/poison.png'],
-            $cells->eq(3)->filter('li img')->extract(['src']),
+            ['normal', 'poison'],
+            $cells->eq(3)->filter('.type-badge')->each(fn ($badge) => $badge->text()),
             'Each type once, sorted by name'
         );
+        $this->assertSame('normal poison', $row->attr('data-types'), 'Used by the type filter');
         $this->assertSame('17-05-2024', $cells->eq(4)->text());
         $this->assertSame('/team/'.$team->getId().'/edit', $cells->eq(5)->filter('a')->attr('href'));
     }
@@ -56,7 +58,8 @@ class TeamListTest extends FunctionalTestCase
 
         $crawler = $this->client->request('GET', '/team/list');
 
-        $this->assertSame(['fire', 'water'], $crawler->filter('#selectPokemonType option')->each(fn ($o) => $o->text()));
+        $this->assertSame(['fire', 'water'], $crawler->filter('#typeFilter label')->each(fn ($label) => $label->text()));
+        $this->assertSame(['fire', 'water'], $crawler->filter('#typeFilter input:checked')->extract(['value']), 'All types are shown at first');
     }
 
     public function testTeamNamesAreEscaped(): void
@@ -99,12 +102,12 @@ class TeamListTest extends FunctionalTestCase
     public function testNewTypesShowUpInTheFilter(): void
     {
         $this->client->request('GET', '/team/list');
-        $this->assertSelectorCount(0, '#selectPokemonType option');
+        $this->assertSelectorNotExists('#typeFilter');
 
         $this->createTeamThroughTheForm('Team', 1);
         $crawler = $this->client->request('GET', '/team/list');
 
-        $this->assertSelectorCount(1, '#selectPokemonType option');
-        $this->assertSame('grass', $crawler->filter('#selectPokemonType option')->text());
+        $this->assertSelectorCount(1, '#typeFilter label');
+        $this->assertSame('grass', $crawler->filter('#typeFilter label')->text());
     }
 }

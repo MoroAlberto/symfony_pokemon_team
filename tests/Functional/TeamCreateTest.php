@@ -18,8 +18,18 @@ class TeamCreateTest extends FunctionalTestCase
         $this->assertSelectorTextContains('h1', 'Create team!');
         $this->assertSelectorExists('input[name="team[name]"]');
         $this->assertSelectorExists('input[type="hidden"][name="team[pokemonTokens]"]');
+        $this->assertSelectorExists('input[type="hidden"][name="team[draft]"][data-team-draft]');
         $this->assertSelectorCount(Team::MAX_POKEMON, '#PokemonTeam .card.free');
         $this->assertSelectorExists('#PokemonTeam[data-new-pokemon-url="/pokemon/new"]');
+    }
+
+    public function testTheBrowserDoesNotRestoreTheHiddenFields(): void
+    {
+        // Review 3, point 1: browsers restored an old draft id on Back or reload
+        $this->client->request('GET', '/team/create');
+
+        $this->assertSelectorExists('input[name="team[draft]"][autocomplete="off"]');
+        $this->assertSelectorExists('input[name="team[pokemonTokens]"][autocomplete="off"]');
     }
 
     public function testCreateATeam(): void
@@ -57,12 +67,12 @@ class TeamCreateTest extends FunctionalTestCase
 
     public function testOnlyTheSelectedDrawnPokemonAreSaved(): void
     {
-        $this->client->request('GET', '/team/create');
-        $first = $this->drawPokemon();
-        $this->drawPokemon();
-        $third = $this->drawPokemon();
+        $draftId = $this->openCreatePage();
+        $first = $this->drawPokemon($draftId);
+        $this->drawPokemon($draftId);
+        $third = $this->drawPokemon($draftId);
 
-        $this->submitTokens('Picky trainer', [$first['token'], $third['token']]);
+        $this->submitTokens('Picky trainer', [$first['token'], $third['token']], $draftId);
 
         $this->assertResponseRedirects('/team/list');
         $names = $this->findTeam('Picky trainer')->getPokemon()->map(fn (Pokemon $p) => $p->getName())->toArray();
@@ -93,14 +103,14 @@ class TeamCreateTest extends FunctionalTestCase
 
     public function testATeamCannotHaveMoreThanSixPokemon(): void
     {
-        $this->client->request('GET', '/team/create');
+        $draftId = $this->openCreatePage();
         $tokens = [];
         for ($i = 0; $i < Team::MAX_POKEMON; ++$i) {
-            $tokens[] = $this->drawPokemon()['token'];
+            $tokens[] = $this->drawPokemon($draftId)['token'];
         }
         $tokens[] = $tokens[0];
 
-        $this->submitTokens('Too many', $tokens);
+        $this->submitTokens('Too many', $tokens, $draftId);
 
         $this->assertResponseStatusCodeSame(422);
         $this->assertAnySelectorTextContains('div, li, span', 'more than 6 Pokémon');
@@ -109,10 +119,10 @@ class TeamCreateTest extends FunctionalTestCase
 
     public function testTheSamePokemonCannotBeSubmittedTwice(): void
     {
-        $this->client->request('GET', '/team/create');
-        $token = $this->drawPokemon()['token'];
+        $draftId = $this->openCreatePage();
+        $token = $this->drawPokemon($draftId)['token'];
 
-        $this->submitTokens('Clones', [$token, $token]);
+        $this->submitTokens('Clones', [$token, $token], $draftId);
 
         $this->assertResponseStatusCodeSame(422);
         $this->assertAnySelectorTextContains('div, li, span', 'more than once');
@@ -131,14 +141,16 @@ class TeamCreateTest extends FunctionalTestCase
     public function testTokensOfAnotherSessionAreRejected(): void
     {
         // Another trainer draws a Pokémon in their own session...
-        $this->client->request('GET', '/team/create');
-        $otherToken = $this->drawPokemon()['token'];
+        $otherDraftId = $this->openCreatePage();
+        $otherToken = $this->drawPokemon($otherDraftId)['token'];
 
         // ...and a different trainer (without the session cookie) tries to use it
         $this->client->getCookieJar()->clear();
         $this->createTeamThroughTheForm('Thief', 0, [$otherToken]);
-
         $this->assertResponseStatusCodeSame(422);
+        $this->submitTokens('Thief', [$otherToken], $otherDraftId);
+        $this->assertResponseStatusCodeSame(422);
+
         $this->assertSame(0, $this->countTeams());
     }
 
@@ -188,7 +200,8 @@ class TeamCreateTest extends FunctionalTestCase
 
         // The trainer fixes the name and saves without drawing again
         $tokens = $this->client->getCrawler()->filter('#PokemonTeam .card[data-token]')->extract(['data-token']);
-        $this->submitTokens('Fixed name', $tokens);
+        $draftId = $this->client->getCrawler()->filter('[data-team-draft]')->attr('value');
+        $this->submitTokens('Fixed name', $tokens, $draftId);
 
         $this->assertResponseRedirects('/team/list');
         $this->assertCount(2, $this->findTeam('Fixed name')->getPokemon());
@@ -204,24 +217,105 @@ class TeamCreateTest extends FunctionalTestCase
 
     public function testTokensCannotBeReusedForASecondTeam(): void
     {
-        $this->client->request('GET', '/team/create');
-        $token = $this->drawPokemon()['token'];
-        $this->submitTokens('First', [$token]);
+        $draftId = $this->openCreatePage();
+        $token = $this->drawPokemon($draftId)['token'];
+        $this->submitTokens('First', [$token], $draftId);
         $this->assertResponseRedirects('/team/list');
 
-        $this->submitTokens('Second', [$token]);
+        $this->submitTokens('Second', [$token], $draftId);
+
+        $this->assertSame(1, $this->countTeams());
+        $this->assertNull($this->findTeam('Second'));
+    }
+
+    public function testSubmittingTheSameTeamTwiceShowsItWasSaved(): void
+    {
+        // Review 2, point 3: a double click on "Save team" used to show an "expired" error for a saved team
+        $draftId = $this->openCreatePage();
+        $token = $this->drawPokemon($draftId)['token'];
+        $this->submitTokens('Double click', [$token], $draftId);
+        $this->assertResponseRedirects('/team/list');
+
+        $this->submitTokens('Double click', [$token], $draftId);
+
+        $this->assertResponseRedirects('/team/list');
+        $this->client->followRedirect();
+        // Review 3, point 5: the second submission is ignored, so it must not look like a success
+        $this->assertSelectorTextContains('.alert-warning', 'already saved');
+        $this->assertSelectorTextContains('.alert-warning', 'start a new team');
+        $this->assertSame(1, $this->countTeams());
+    }
+
+    public function testCatchingOnASavedTeamSaysItWasSaved(): void
+    {
+        // Review 3, point 2: catching after saving (e.g. after Back) said "expired"
+        $draftId = $this->openCreatePage();
+        $token = $this->drawPokemon($draftId)['token'];
+        $this->submitTokens('Saved team', [$token], $draftId);
+
+        $response = $this->drawPokemon($draftId, [$token]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertStringContainsString('already saved', $response['error']);
+    }
+
+    public function testADraftWithPokemonSurvivesOtherPages(): void
+    {
+        // Review 2, point 1: opening "Create team" 5 more times used to drop the draft in use
+        $draftId = $this->openCreatePage();
+        $tokens = [$this->drawPokemon($draftId)['token']];
+        for ($i = 0; $i < 10; ++$i) {
+            $this->openCreatePage();
+        }
+
+        $this->submitTokens('Survivor', $tokens, $draftId);
+
+        $this->assertResponseRedirects('/team/list');
+    }
+
+    public function testOpeningTheCreatePageInAnotherTabKeepsTheFirstDraft(): void
+    {
+        // Review point 1: opening "Create new team" in a second tab used to wipe the first tab's Pokémon
+        $firstTab = $this->openCreatePage();
+        $tokens = [$this->drawPokemon($firstTab)['token'], $this->drawPokemon($firstTab)['token']];
+
+        $this->openCreatePage();
+        $this->submitTokens('First tab team', $tokens, $firstTab);
+
+        $this->assertResponseRedirects('/team/list');
+        $this->assertCount(2, $this->findTeam('First tab team')->getPokemon());
+    }
+
+    public function testAnExpiredDraftIsReplacedByANewOne(): void
+    {
+        $this->openCreatePage();
+
+        $this->submitTokens('Late team', ['0123456789abcdef'], '0123456789abcdef');
 
         $this->assertResponseStatusCodeSame(422);
-        $this->assertSame(1, $this->countTeams());
+        $this->assertAnySelectorTextContains('div, li, span', 'create it again');
+        $newDraftId = $this->client->getCrawler()->filter('[data-team-draft]')->attr('value');
+        $this->assertNotSame('0123456789abcdef', $newDraftId);
+        $this->drawPokemon($newDraftId);
+        $this->assertResponseIsSuccessful();
+    }
+
+    public function testTheNameIsSavedWithoutSurroundingSpaces(): void
+    {
+        $this->createTeamThroughTheForm('   Pikachu Squad   ', 1);
+
+        $this->assertResponseRedirects('/team/list');
+        $this->assertNotNull($this->findTeam('Pikachu Squad'));
     }
 
     public function testCsrfProtection(): void
     {
-        $this->client->request('GET', '/team/create');
-        $token = $this->drawPokemon()['token'];
+        $draftId = $this->openCreatePage();
+        $token = $this->drawPokemon($draftId)['token'];
 
         $this->client->request('POST', '/team/create', ['team' => [
             'name' => 'Forged request',
+            'draft' => $draftId,
             'pokemonTokens' => json_encode([$token]),
             '_token' => 'csrf-token',
         ]], server: ['HTTP_ORIGIN' => 'https://evil.example.com', 'HTTP_REFERER' => 'https://evil.example.com/']);
@@ -235,20 +329,5 @@ class TeamCreateTest extends FunctionalTestCase
         $this->client->request('DELETE', '/team/create');
 
         $this->assertResponseStatusCodeSame(405);
-    }
-
-    /**
-     * Submits the create form with the given tokens, keeping the current draft.
-     *
-     * @param list<string> $tokens
-     */
-    private function submitTokens(string $name, array $tokens): void
-    {
-        // Opening the create page would start a new draft, so post directly (forms use a stateless CSRF token)
-        $this->client->request('POST', '/team/create', ['team' => [
-            'name' => $name,
-            'pokemonTokens' => json_encode($tokens),
-            '_token' => 'csrf-token',
-        ]], server: ['HTTP_ORIGIN' => 'http://localhost']);
     }
 }

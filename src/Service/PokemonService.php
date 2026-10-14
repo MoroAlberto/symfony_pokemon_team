@@ -4,134 +4,120 @@ namespace App\Service;
 
 use App\Entity\Ability;
 use App\Entity\Pokemon;
+use App\Entity\Team;
 use App\Entity\Type;
+use App\Exception\PokeApiException;
 use App\Repository\AbilityRepository;
 use App\Repository\TypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Exception;
-use Psr\Cache\InvalidArgumentException;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class PokemonService
 {
-    private HttpClientInterface $client;
-    private EntityManagerInterface $entityManager;
-    private TypeRepository $typeRepository;
-    private AbilityRepository $abilityRepository;
-    private FilesystemAdapter $cache;
+    public const API_URL = 'https://pokeapi.co/api/v2/pokemon/';
+    // Highest national Pokédex number available on PokeAPI
+    public const MAX_POKEMON_ID = 1025;
 
-    public function __construct(HttpClientInterface $client, EntityManagerInterface $entityManager, TypeRepository $typeRepository ,AbilityRepository $abilityRepository)
-    {
-        $this->client = $client;
-        $this->entityManager = $entityManager;
-        $this->typeRepository = $typeRepository;
-        $this->abilityRepository = $abilityRepository;
-        $this->cache = new FilesystemAdapter();
+    public function __construct(
+        private HttpClientInterface $client,
+        private EntityManagerInterface $entityManager,
+        private TypeRepository $typeRepository,
+        private AbilityRepository $abilityRepository,
+        private TeamService $teamService,
+        private TypeService $typeService,
+    ) {
     }
 
     /**
-     * @throws TransportExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws ClientExceptionInterface
+     * Fetches a random Pokémon from PokeAPI.
+     *
+     * @return array{apiId: int, name: string, baseExperience: int, sprite: string, abilities: list<string>, types: list<string>}
+     *
+     * @throws PokeApiException
      */
-    public function newPokemon(): Pokemon
+    public function fetchRandomPokemon(): array
     {
-        $randomPokemon = $this->getRandomPokemon();
-        $pokemon = new Pokemon();
-        $pokemon->setName($randomPokemon['name']);
-        $pokemon->setBaseExperience($randomPokemon['base_experience']);
-        $pokemon->setSprite($randomPokemon['sprites']['front_default']);
-        foreach ($randomPokemon['abilities'] as $abilityArray) {
-            $ability = new Ability();
-            $ability->setName($abilityArray['ability']['name']);
-            $ability->addPokemon($pokemon);
-            $pokemon->addAbility($ability);
+        $apiId = random_int(1, self::MAX_POKEMON_ID);
+
+        try {
+            $response = $this->client->request('GET', self::API_URL.$apiId.'/');
+            if (200 !== $response->getStatusCode()) {
+                throw new PokeApiException('Error with pokemon API '.$response->getStatusCode());
+            }
+            $data = $response->toArray();
+        } catch (ExceptionInterface $e) {
+            throw new PokeApiException('Error with pokemon API: '.$e->getMessage(), 0, $e);
         }
-        foreach ($randomPokemon['types'] as $typeArray) {
-            $type = new Type();
-            $type->setName($typeArray['type']['name']);
-            $type->addPokemon($pokemon);
-            $pokemon->addType($type);
-        }
-        return $pokemon;
+
+        return ['apiId' => $apiId] + $this->normalize($data);
     }
 
     /**
-     * @return array
-     * @throws ClientExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
-     * @throws Exception
+     * Persists the given Pokémon (as returned by fetchRandomPokemon) and adds them to the team.
+     *
+     * @param list<array{name: string, baseExperience: int, sprite: string, abilities: list<string>, types: list<string>}> $pokemonList
      */
-    private function getRandomPokemon(): array
+    public function addPokemonToTeam(Team $team, array $pokemonList): void
     {
-        $randId = rand(1, 905);
-        $response = $this->client->request(
-            'GET',
-            'https://pokeapi.co/api/v2/pokemon/' . $randId . '/'
-        );
-        $statusCode = $response->getStatusCode();
-        if ($statusCode == 200) {
-            return $response->toArray();
-        } else {
-            throw new Exception('Error with pokemon API ' . $statusCode);
-        }
-    }
+        // Types and abilities created in this batch, so that two Pokémon sharing a new type don't duplicate it
+        $types = [];
+        $abilities = [];
 
-    /**
-     * @throws InvalidArgumentException
-     */
-    public function addPokemonList($team, $pokemonJsonList): void
-    {
-        //$serializer->deserialize($serializedEntity, Pokemon::class, 'json');
-        //can't use because I didn't pass "abilities" value for class "App\Entity\Pokemon": Expected argument of type "App\Entity\Ability", "array" given at property path "abilities".
-        $pokemonJsonArray = json_decode("[".$pokemonJsonList."]");
-        foreach ($pokemonJsonArray as $pokemonArray) {
+        foreach ($pokemonList as $pokemonData) {
             $pokemon = new Pokemon();
-            $pokemon->setName($pokemonArray->name);
-            $pokemon->setBaseExperience($pokemonArray->baseExperience);
-            $pokemon->setSprite($pokemonArray->sprite);
-            $this->entityManager->persist($pokemon);
-            foreach ($pokemonArray->abilities as $abilityArray) {
-                $ability = $this->abilityRepository->findOneBy(['name' => $abilityArray->name]);
-                if ($ability == null) {
-                    $ability = new Ability();
-                    $ability->setName($abilityArray->name);
-                }
-                $ability->addPokemon($pokemon);
-                $this->entityManager->persist($ability);
-                $this->entityManager->flush();
-                $pokemon->addAbility($ability);
+            $pokemon->setName($pokemonData['name']);
+            $pokemon->setBaseExperience($pokemonData['baseExperience']);
+            $pokemon->setSprite($pokemonData['sprite']);
+
+            foreach ($pokemonData['abilities'] as $name) {
+                $abilities[$name] ??= $this->abilityRepository->findOneBy(['name' => $name])
+                    ?? (new Ability())->setName($name);
+                $pokemon->addAbility($abilities[$name]);
+                $this->entityManager->persist($abilities[$name]);
             }
-            foreach ($pokemonArray->types as $typeArray) {
-                $type = $this->typeRepository->findOneBy(['name' => $typeArray->name]);
-                if ($type == null) {
-                    $type = new Type();
-                    $type->setName( $typeArray->name);
-                }
-                $type->addPokemon($pokemon);
-                $this->entityManager->persist($type);
-                $this->entityManager->flush();
-                $pokemon->addType($type);
+            foreach ($pokemonData['types'] as $name) {
+                $types[$name] ??= $this->typeRepository->findOneBy(['name' => $name])
+                    ?? (new Type())->setName($name);
+                $pokemon->addType($types[$name]);
+                $this->entityManager->persist($types[$name]);
             }
-            $this->entityManager->persist($pokemon);
-            $this->entityManager->flush();
+
             $team->addPokemon($pokemon);
+            $this->entityManager->persist($pokemon);
         }
+
         $this->entityManager->persist($team);
         $this->entityManager->flush();
-        $this->cache->delete('team_key');
-        $this->cache->delete('type_key');
+        // The team, and maybe new types, must show up in the cached lists
+        $this->teamService->invalidateCache();
+        $this->typeService->invalidateCache();
     }
 
+    /**
+     * @throws PokeApiException When the PokeAPI data does not have the expected shape
+     */
+    private function normalize(array $data): array
+    {
+        $names = fn (mixed $list, string $key) => \is_array($list)
+            ? array_map(fn (mixed $item) => $item[$key]['name'] ?? null, $list)
+            : null;
+        $pokemon = [
+            'name' => $data['name'] ?? null,
+            // Some recent Pokémon have no base experience or sprite on PokeAPI
+            'baseExperience' => $data['base_experience'] ?? 0,
+            'sprite' => $data['sprites']['front_default'] ?? '',
+            'abilities' => $names($data['abilities'] ?? null, 'ability'),
+            'types' => $names($data['types'] ?? null, 'type'),
+        ];
+
+        $isListOfStrings = fn (mixed $list) => \is_array($list) && array_is_list($list)
+            && $list === array_filter($list, 'is_string');
+        if (!\is_string($pokemon['name']) || !\is_int($pokemon['baseExperience']) || !\is_string($pokemon['sprite'])
+            || !$isListOfStrings($pokemon['abilities']) || !$isListOfStrings($pokemon['types'])) {
+            throw new PokeApiException('Unexpected data from pokemon API');
+        }
+
+        return $pokemon;
+    }
 }

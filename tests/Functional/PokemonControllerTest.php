@@ -13,11 +13,11 @@ class PokemonControllerTest extends FunctionalTestCase
             'charizard', 240, 'https://example.com/6.png', ['blaze', 'solar-power'], ['fire', 'flying']
         ));
 
-        $pokemon = $this->drawPokemon();
+        $pokemon = $this->drawPokemon($this->openCreatePage());
 
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('content-type', 'application/json');
-        $this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $pokemon['token']);
+        $this->assertMatchesRegularExpression('/^t[0-9a-f]{16}$/', $pokemon['token']);
         $this->assertSame('charizard', $pokemon['name']);
         $this->assertSame(240, $pokemon['baseExperience']);
         $this->assertSame('https://example.com/6.png', $pokemon['sprite']);
@@ -27,7 +27,7 @@ class PokemonControllerTest extends FunctionalTestCase
 
     public function testDrawCallsThePokeApi(): void
     {
-        $pokemon = $this->drawPokemon();
+        $pokemon = $this->drawPokemon($this->openCreatePage());
 
         $this->assertCount(1, PokeApiMock::$requests);
         $this->assertSame('https://pokeapi.co/api/v2/pokemon/'.$pokemon['apiId'].'/', PokeApiMock::$requests[0]);
@@ -41,37 +41,83 @@ class PokemonControllerTest extends FunctionalTestCase
         $this->assertCount(0, PokeApiMock::$requests);
     }
 
+    public function testDrawRequiresAKnownDraft(): void
+    {
+        $this->openCreatePage();
+
+        $response = $this->drawPokemon('0123456789abcdef');
+
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertStringContainsString('create it again', $response['error']);
+        $this->assertCount(0, PokeApiMock::$requests);
+    }
+
+    public function testDrawWithAnInvalidBodyReturns400(): void
+    {
+        $this->openCreatePage();
+
+        $this->client->request('POST', '/pokemon/new', server: ['CONTENT_TYPE' => 'application/json'], content: 'not json');
+
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertCount(0, PokeApiMock::$requests);
+    }
+
     public function testATrainerCannotDrawMoreThanSixPokemon(): void
     {
+        $draftId = $this->openCreatePage();
         for ($i = 0; $i < Team::MAX_POKEMON; ++$i) {
-            $this->drawPokemon();
+            $this->drawPokemon($draftId);
             $this->assertResponseIsSuccessful();
         }
 
-        $response = $this->drawPokemon();
+        $response = $this->drawPokemon($draftId);
 
         $this->assertResponseStatusCodeSame(400);
         $this->assertStringContainsString('more than 6', $response['error']);
         $this->assertCount(Team::MAX_POKEMON, PokeApiMock::$requests, 'The PokeAPI should not be called');
     }
 
-    public function testOpeningTheCreatePageStartsANewDraft(): void
+    public function testALostResponseDoesNotBlockTheTeam(): void
     {
-        for ($i = 0; $i < Team::MAX_POKEMON; ++$i) {
-            $this->drawPokemon();
+        // Review point 2: the server stored a Pokémon whose response never reached the page
+        $draftId = $this->openCreatePage();
+        $shown = [];
+        for ($i = 0; $i < Team::MAX_POKEMON - 1; ++$i) {
+            $shown[] = $this->drawPokemon($draftId, $shown)['token'];
         }
+        $this->drawPokemon($draftId, $shown);
 
-        $this->client->request('GET', '/team/create');
-        $this->drawPokemon();
+        // The page still shows a free slot, so the next catch must work
+        $last = $this->drawPokemon($draftId, $shown);
 
         $this->assertResponseIsSuccessful();
+        $this->submitTokens('Lucky team', [...$shown, $last['token']], $draftId);
+        $this->assertResponseRedirects('/team/list');
+        $this->assertCount(Team::MAX_POKEMON, $this->findTeam('Lucky team')->getPokemon());
+    }
+
+    public function testEachCreatePageHasItsOwnSixSlots(): void
+    {
+        // Review point 2: two tabs share the session but must not share the slots
+        $firstTab = $this->openCreatePage();
+        $secondTab = $this->openCreatePage();
+        for ($i = 0; $i < 3; ++$i) {
+            $this->drawPokemon($firstTab);
+            $this->drawPokemon($secondTab);
+        }
+
+        for ($i = 0; $i < 3; ++$i) {
+            $this->drawPokemon($firstTab);
+            $this->assertResponseIsSuccessful();
+        }
     }
 
     public function testPokeApiErrorReturns502(): void
     {
+        $draftId = $this->openCreatePage();
         PokeApiMock::$failWithStatus = 500;
 
-        $response = $this->drawPokemon();
+        $response = $this->drawPokemon($draftId);
 
         $this->assertResponseStatusCodeSame(502);
         $this->assertStringContainsString('not available', $response['error']);
@@ -79,21 +125,35 @@ class PokemonControllerTest extends FunctionalTestCase
 
     public function testPokeApiNetworkErrorReturns502(): void
     {
+        $draftId = $this->openCreatePage();
         PokeApiMock::$failWithNetworkError = true;
 
-        $this->drawPokemon();
+        $this->drawPokemon($draftId);
 
         $this->assertResponseStatusCodeSame(502);
     }
 
+    public function testUnexpectedPokeApiDataReturns502(): void
+    {
+        // Review point 6: a 200 response with an unexpected body used to crash with a 500
+        $draftId = $this->openCreatePage();
+        PokeApiMock::$pokemon = array_fill(1, 1025, ['name' => 'missingno']);
+
+        $response = $this->drawPokemon($draftId);
+
+        $this->assertResponseStatusCodeSame(502);
+        $this->assertStringContainsString('not available', $response['error']);
+    }
+
     public function testAFailedDrawDoesNotUseASlot(): void
     {
+        $draftId = $this->openCreatePage();
         PokeApiMock::$failWithStatus = 500;
-        $this->drawPokemon();
+        $this->drawPokemon($draftId);
         PokeApiMock::$failWithStatus = null;
 
         for ($i = 0; $i < Team::MAX_POKEMON; ++$i) {
-            $this->drawPokemon();
+            $this->drawPokemon($draftId);
             $this->assertResponseIsSuccessful();
         }
     }

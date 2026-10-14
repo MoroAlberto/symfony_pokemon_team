@@ -21,14 +21,25 @@ abstract class FunctionalTestCase extends WebTestCase
     }
 
     /**
-     * Draws a random Pokémon like the "Gotta Catch 'Em All" button does.
+     * Opens the create page and returns the id of its team draft.
      */
-    protected function drawPokemon(?KernelBrowser $client = null): array
+    protected function openCreatePage(): string
     {
-        $client ??= $this->client;
-        $client->request('POST', '/pokemon/new');
+        $crawler = $this->client->request('GET', '/team/create');
 
-        return json_decode($client->getResponse()->getContent(), true);
+        return (string) $crawler->filter('[data-team-draft]')->attr('value');
+    }
+
+    /**
+     * Draws a random Pokémon like the "Gotta Catch 'Em All" button does.
+     *
+     * @param list<string>|null $keep Tokens of the Pokémon shown on the page, sent like create.js does
+     */
+    protected function drawPokemon(string $draftId, ?array $keep = null): array
+    {
+        $this->client->jsonRequest('POST', '/pokemon/new', ['draft' => $draftId] + (null === $keep ? [] : ['keep' => $keep]));
+
+        return json_decode($this->client->getResponse()->getContent(), true);
     }
 
     /**
@@ -44,9 +55,10 @@ abstract class FunctionalTestCase extends WebTestCase
         ?string $rawTokens = null,
     ): Crawler {
         $crawler = $this->client->request('GET', '/team/create');
+        $draftId = (string) $crawler->filter('[data-team-draft]')->attr('value');
         $drawnTokens = [];
         for ($i = 0; $i < $pokemonCount; ++$i) {
-            $drawnTokens[] = $this->drawPokemon()['token'];
+            $drawnTokens[] = $this->drawPokemon($draftId)['token'];
         }
 
         $form = $crawler->selectButton('Save team')->form();
@@ -55,6 +67,22 @@ abstract class FunctionalTestCase extends WebTestCase
             'team[name]' => $name,
             'team[pokemonTokens]' => $rawTokens ?? json_encode($tokens ?? $drawnTokens),
         ]);
+    }
+
+    /**
+     * Submits the create form of the given draft, without opening the create page again.
+     *
+     * @param list<string> $tokens
+     */
+    protected function submitTokens(string $name, array $tokens, string $draftId): void
+    {
+        // Forms use a stateless CSRF token, checked against the Origin header
+        $this->client->request('POST', '/team/create', ['team' => [
+            'name' => $name,
+            'draft' => $draftId,
+            'pokemonTokens' => json_encode($tokens),
+            '_token' => 'csrf-token',
+        ]], server: ['HTTP_ORIGIN' => 'http://localhost']);
     }
 
     protected function countTeams(): int

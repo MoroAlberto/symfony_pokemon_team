@@ -64,7 +64,7 @@ class TeamServiceTest extends KernelTestCase
         $this->assertEquals(new \DateTime('2024-01-01'), $team->getCreatedAt());
     }
 
-    public function testTypesAreSortedByNameAndInvalidatedWithTheTeams(): void
+    public function testTypesAreSortedByNameAndCachedUntilInvalidated(): void
     {
         $this->createTeam('Team', ['squirtle' => [63, ['water']], 'charmander' => [62, ['fire']]]);
         $this->assertSame(['fire', 'water'], $this->getTypeNames());
@@ -72,8 +72,35 @@ class TeamServiceTest extends KernelTestCase
         $this->createTeam('Other team', ['pikachu' => [112, ['electric']]]);
         $this->assertSame(['fire', 'water'], $this->getTypeNames(), 'The types should come from the cache');
 
-        $this->getTeamService()->invalidateCache();
+        static::getContainer()->get(TypeService::class)->invalidateCache();
         $this->assertSame(['electric', 'fire', 'water'], $this->getTypeNames());
+    }
+
+    public function testEachServiceInvalidatesOnlyItsOwnCache(): void
+    {
+        // Review 2, point 5: the team and type caches are invalidated separately
+        $this->createTeam('Team', ['pikachu' => [112, ['electric']]]);
+        $this->getTeamService()->getTeamsCache();
+        $this->assertSame(['electric'], $this->getTypeNames());
+        $this->createTeam('Other team', ['squirtle' => [63, ['water']]]);
+
+        $this->getTeamService()->invalidateCache();
+
+        $this->assertCount(2, $this->getTeamService()->getTeamsCache());
+        $this->assertSame(['electric'], $this->getTypeNames(), 'The types should still come from the cache');
+    }
+
+    public function testSaveKeepsTheTypeCache(): void
+    {
+        // Review point 8: renaming a team does not change the types, so their cache stays valid
+        $team = $this->createTeam('Team', ['pikachu' => [112, ['electric']]]);
+        $this->assertSame(['electric'], $this->getTypeNames());
+        $this->createTeam('Other team', ['squirtle' => [63, ['water']]]);
+
+        $team->setName('Renamed');
+        $this->getTeamService()->save($team);
+
+        $this->assertSame(['electric'], $this->getTypeNames(), 'The types should still come from the cache');
     }
 
     private function getTeamService(): TeamService

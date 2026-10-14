@@ -9,6 +9,22 @@ use PHPUnit\Framework\TestCase;
 
 class TeamTest extends TestCase
 {
+    public function testNameIsTrimmed(): void
+    {
+        // Review point 7: the name was validated trimmed but saved with the spaces
+        $team = (new Team())->setName("  Pikachu Squad \n");
+
+        $this->assertSame('Pikachu Squad', $team->getName());
+    }
+
+    public function testNameIsTrimmedOfUnicodeSpaces(): void
+    {
+        // Review 2, point 4: trim() only removes ASCII spaces, the form removes Unicode ones too
+        $team = (new Team())->setName("\u{00A0}Pikachu Squad\u{3000}");
+
+        $this->assertSame('Pikachu Squad', $team->getName());
+    }
+
     public function testAddPokemonSetsTheTeamOnThePokemon(): void
     {
         $team = new Team();

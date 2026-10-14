@@ -3,58 +3,58 @@
 {% block title %}List of Pokémon{% endblock %}
 
 {% block body %}
-    <h1 class="display-5 fw-bold">List of created team</h1>
-    <p class="col-md-8 fs-4">Here are all your Pokémon teams you created, <br>
-        on the right you will find a button to edit the team</p>
-    <label for="selectPokemonType">Filter by Pokémon type:</label>
-    <select class="selectpicker" multiple data-live-search="true" id="selectPokemonType" data-style="btn-info">
-        {% for type in types %}
-            <option value="{{ type.id }}">{{ type.name }}</option>
-        {% endfor %}
-    </select>
-    <table class="table">
-        <thead class="thead-dark">
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">Name</th>
-            <th scope="col">Sprite</th>
-            <th scope="col">Sum Exp</th>
-            <th scope="col">Types</th>
-            <th scope="col">Creation date</th>
-            <th scope="col"></th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for team in teams %}
-            <tr id="team_id_{{ team.id }}">
-                <th scope="row">{{ team.id }}</th>
-                <td> {{ team.name }}</td>
-                <td>{% for pokemon in  team.pokemon %}
-                        <img class="img-thumbnail col-sm-3" src="{{ pokemon.sprite }}" alt="Pokemon sprite"/>
-                    {% endfor %}
-                </td>
-                <td> {% set sum = 0 %}
-                    {% for pokemon in  team.pokemon %}
-                        {% set sum = sum + pokemon.baseExperience %}
-                    {% endfor %}
-                    {{ sum }}</td>
-                <td>
-                    <ul>
-                        {% for typeId, typeName in team.typeList %}
-                            <li data-type="{{ typeId }}"><img
-                                        src="https://veekun.com/dex/media/types/en/{{ typeName }}.png" alt="type"/></li>
-                        {% endfor %}
-                    </ul>
-                </td>
-                <td> {{ team.createdAt | date('d-m-Y') }}</td>
-                <td><a class="btn btn-primary" href="/team/{{ team.id }}/edit" role="button">Edit</a></td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    <a href="/team/create" class="btn btn-secondary" style="float: right">Create new team</a>
-    <a href="/team" class="btn btn-secondary" style="float: right; margin-right: 2px">Homepage</a>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h1 class="display-6 fw-bold mb-0">Your teams</h1>
+        <a href="{{ path('create_team') }}" class="btn btn-danger">Create new team</a>
+    </div>
+
+    {% if teams is empty %}
+        <div class="p-5 text-center bg-body rounded-3 shadow-sm text-body-secondary">
+            No team yet: <a href="{{ path('create_team') }}">create your first one</a>!
+        </div>
+    {% else %}
+        <div class="mb-3" id="typeFilter">
+            <div class="small text-body-secondary mb-1">Show teams with these types:</div>
+            <div class="d-flex flex-wrap gap-1">
+                {% for type in types %}
+                    <input type="checkbox" class="btn-check" id="filter_{{ type.name }}" value="{{ type.name }}"
+                           autocomplete="off" checked data-type-filter>
+                    <label class="btn btn-sm type-filter type-{{ type.name }}" for="filter_{{ type.name }}">{{ type.name }}</label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="table-responsive bg-body rounded-3 shadow-sm">
+            <table class="table align-middle mb-0">
+                <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Pokémon</th>
+                    <th scope="col">Sum Exp</th>
+                    <th scope="col">Types</th>
+                    <th scope="col">Creation date</th>
+                    <th scope="col"></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for team in teams %}
+                    <tr id="team_id_{{ team.id }}" data-types="{{ team.typeList|join(' ') }}">
+                        <th scope="row" class="text-body-secondary">{{ team.id }}</th>
+                        <td class="fw-semibold">{{ team.name }}</td>
+                        <td class="team-sprites">{% for pokemon in team.pokemon %}<img src="{{ pokemon.sprite }}" alt="{{ pokemon.name }}" title="{{ pokemon.name|replace({'-': ' '})|title }}" width="56" height="56"/>{% endfor %}</td>
+                        <td>{{ team.pokemon|reduce((sum, pokemon) => sum + pokemon.baseExperience, 0) }}</td>
+                        <td><div class="d-flex flex-wrap gap-1">{% for typeName in team.typeList %}{{ include('_type_badge.html.twig', {name: typeName}) }}{% endfor %}</div></td>
+                        <td class="text-nowrap">{{ team.createdAt|date('d-m-Y') }}</td>
+                        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ path('edit_team', {id: team.id}) }}">Edit</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
 {% endblock %}
+
 {% block footer_js %}
     <script src="{{ asset('js/list.js') }}"></script>
 {% endblock %}
