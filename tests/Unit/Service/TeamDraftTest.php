@@ -4,6 +4,7 @@ namespace App\Tests\Unit\Service;
 
 use App\Entity\Team;
 use App\Exception\InvalidTeamDraftException;
+use App\Service\PokemonService;
 use App\Service\TeamDraft;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -12,6 +13,9 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
+/**
+ * @phpstan-import-type PokemonData from PokemonService
+ */
 class TeamDraftTest extends TestCase
 {
     private RequestStack $requestStack;
@@ -46,11 +50,11 @@ class TeamDraftTest extends TestCase
     {
         $draftId = $this->teamDraft->start();
 
-        $pokemon = $this->teamDraft->add($draftId, fn () => ['name' => 'pikachu']);
+        $pokemon = $this->teamDraft->add($draftId, fn () => self::pokemon('pikachu'));
 
         $this->assertMatchesRegularExpression('/^t[0-9a-f]{16}$/', $pokemon['token']);
         $this->assertSame('pikachu', $pokemon['name']);
-        $this->assertSame([$pokemon['token'] => ['name' => 'pikachu']], $this->teamDraft->all($draftId));
+        $this->assertSame([$pokemon['token'] => self::pokemon('pikachu')], $this->teamDraft->all($draftId));
     }
 
     public function testTokensAreUnique(): void
@@ -79,7 +83,7 @@ class TeamDraftTest extends TestCase
     {
         $this->expectException(InvalidTeamDraftException::class);
 
-        $this->teamDraft->add('0123456789abcdef', fn () => ['name' => 'pikachu']);
+        $this->teamDraft->add('0123456789abcdef', fn () => self::pokemon('pikachu'));
     }
 
     public function testDraftsAreIndependent(): void
@@ -161,12 +165,12 @@ class TeamDraftTest extends TestCase
             }
         };
         $draftId = $teamDraft->start();
-        $token = $teamDraft->add($draftId, fn () => ['name' => 'pikachu'])['token'];
+        $token = $teamDraft->add($draftId, fn () => self::pokemon('pikachu'))['token'];
 
-        $this->assertIsString($draftId);
+        $this->assertSame('d1000000000000000', $draftId);
         $this->assertSame([$token], array_keys($teamDraft->all($draftId)));
         $teamDraft->retain($draftId, [$token]);
-        $this->assertSame([['name' => 'pikachu']], $teamDraft->pick($draftId, [$token]));
+        $this->assertSame([self::pokemon('pikachu')], $teamDraft->pick($draftId, [$token]));
     }
 
     public function testRetainDropsThePokemonThePageDoesNotShow(): void
@@ -192,11 +196,11 @@ class TeamDraftTest extends TestCase
     public function testPickReturnsThePokemonInTheRequestedOrder(): void
     {
         $draftId = $this->teamDraft->start();
-        $first = $this->teamDraft->add($draftId, fn () => ['name' => 'bulbasaur'])['token'];
-        $second = $this->teamDraft->add($draftId, fn () => ['name' => 'charmander'])['token'];
+        $first = $this->teamDraft->add($draftId, fn () => self::pokemon('bulbasaur'))['token'];
+        $second = $this->teamDraft->add($draftId, fn () => self::pokemon('charmander'))['token'];
 
         $this->assertSame(
-            [['name' => 'charmander'], ['name' => 'bulbasaur']],
+            [self::pokemon('charmander'), self::pokemon('bulbasaur')],
             $this->teamDraft->pick($draftId, [$second, $first])
         );
     }
@@ -214,6 +218,9 @@ class TeamDraftTest extends TestCase
         $this->teamDraft->pick($draftId, $tokens);
     }
 
+    /**
+     * @return iterable<string, array{mixed, string}>
+     */
     public static function invalidPicks(): iterable
     {
         yield 'no Pokémon' => [[], 'at least one Pokémon'];
@@ -254,7 +261,7 @@ class TeamDraftTest extends TestCase
         $this->expectException(InvalidTeamDraftException::class);
         $this->expectExceptionMessage('already saved');
 
-        $this->teamDraft->add($draftId, fn () => ['name' => 'pikachu']);
+        $this->teamDraft->add($draftId, fn () => self::pokemon('pikachu'));
     }
 
     public function testOnlyTheLastCompletedDraftsAreRemembered(): void
@@ -275,9 +282,17 @@ class TeamDraftTest extends TestCase
     {
         $tokens = [];
         for ($i = 0; $i < $count; ++$i) {
-            $tokens[] = $this->teamDraft->add($draftId, fn () => ['name' => 'pokemon-'.$i])['token'];
+            $tokens[] = $this->teamDraft->add($draftId, fn () => self::pokemon('pokemon-'.$i))['token'];
         }
 
         return $tokens;
+    }
+
+    /**
+     * @return PokemonData
+     */
+    private static function pokemon(string $name): array
+    {
+        return ['apiId' => 1, 'name' => $name, 'baseExperience' => 100, 'sprite' => '', 'abilities' => [], 'types' => []];
     }
 }

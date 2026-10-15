@@ -2,6 +2,8 @@
 
 namespace App\Tests\Functional;
 
+use Doctrine\Bundle\DoctrineBundle\DataCollector\DoctrineDataCollector;
+
 class TeamListTest extends FunctionalTestCase
 {
     public function testEmptyList(): void
@@ -135,6 +137,9 @@ class TeamListTest extends FunctionalTestCase
         $this->client->request('GET', '/team/list');
         $this->assertResponseIsSuccessful();
 
-        return $this->client->getProfile()->getCollector('db')->getQueryCount();
+        /** @var DoctrineDataCollector $collector */
+        $collector = $this->client->getProfile()->getCollector('db');
+
+        return $collector->getQueryCount();
     }
 }

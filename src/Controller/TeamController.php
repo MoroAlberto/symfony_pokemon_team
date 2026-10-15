@@ -28,7 +28,7 @@ class TeamController extends AbstractController
     public function createTeam(
         Request $request,
         PokemonService $pokemonService,
-        TeamDraft $teamDraft
+        TeamDraft $teamDraft,
     ): Response {
         $team = new Team();
         $team->setCreatedAt(new \DateTime());
@@ -48,15 +48,17 @@ class TeamController extends AbstractController
         if ($form->isSubmitted()) {
             try {
                 $pokemon = $teamDraft->pick($draftId, json_decode((string) $form->get('pokemonTokens')->getData(), true));
-            } catch (InvalidTeamDraftException $e) {
-                $form->addError(new FormError($e->getMessage()));
-            }
-            if ($form->isValid()) {
-                $pokemonService->addPokemonToTeam($team, $pokemon);
-                $teamDraft->complete($draftId);
-                $this->addFlash('success', 'Your changes were saved!');
 
-                return $this->redirectToRoute('list_teams');
+                if ($form->isValid()) {
+                    $pokemonService->addPokemonToTeam($team, $pokemon);
+                    $teamDraft->complete($draftId);
+                    $this->addFlash('success', 'Your changes were saved!');
+
+                    return $this->redirectToRoute('list_teams');
+                }
+            } catch (InvalidTeamDraftException $e) {
+                // The chosen Pokémon are not valid: the form is shown again with the error
+                $form->addError(new FormError($e->getMessage()));
             }
         }
 

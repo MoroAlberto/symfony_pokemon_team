@@ -1,0 +1,3 @@
+# Always LF line endings in the working copy, whatever the local core.autocrlf setting:
+# the code style check (PHP-CS-Fixer) and Symfony's generated files expect LF
+* text=auto eol=lf

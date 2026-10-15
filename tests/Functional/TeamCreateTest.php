@@ -163,6 +163,9 @@ class TeamCreateTest extends FunctionalTestCase
         $this->assertSame(0, $this->countTeams());
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function malformedTokens(): iterable
     {
         yield 'not JSON' => ['not json'];

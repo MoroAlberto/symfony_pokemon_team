@@ -18,6 +18,7 @@ class Type
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
+    /** @var Collection<int, Pokemon> */
     #[ORM\ManyToMany(targetEntity: Pokemon::class, inversedBy: 'types')]
     private Collection $pokemon;
 
@@ -42,7 +43,6 @@ class Type
 
         return $this;
     }
-
 
     public function addPokemon(Pokemon $pokemon): self
     {

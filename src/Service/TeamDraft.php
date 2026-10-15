@@ -12,6 +12,9 @@ use Symfony\Component\HttpFoundation\RequestStack;
  *
  * Each create page has its own draft, so that pages open in several tabs don't interfere.
  * This class is the only place enforcing the rules on the Pokémon of a new team.
+ *
+ * @phpstan-import-type PokemonData from PokemonService
+ * @phpstan-import-type DrawnPokemon from PokemonService
  */
 class TeamDraft
 {
@@ -52,7 +55,7 @@ class TeamDraft
     }
 
     /**
-     * @return array<string, array> Drawn Pokémon indexed by token
+     * @return array<string, PokemonData> Drawn Pokémon indexed by token
      */
     public function all(string $draftId): array
     {
@@ -62,9 +65,9 @@ class TeamDraft
     /**
      * Draws a Pokémon with $draw and stores it in the draft, unless the team is already full.
      *
-     * @param callable(): array $draw
+     * @param callable(): PokemonData $draw
      *
-     * @return array The drawn Pokémon, with its token
+     * @return DrawnPokemon The drawn Pokémon, with its token
      *
      * @throws InvalidTeamDraftException
      */
@@ -85,7 +88,7 @@ class TeamDraft
     /**
      * Forgets the drawn Pokémon that the page does not show, e.g. because their response was lost.
      *
-     * @param array $tokens Tokens of the Pokémon shown on the page
+     * @param array<mixed> $tokens Tokens of the Pokémon shown on the page, as sent by the browser
      *
      * @throws InvalidTeamDraftException
      */
@@ -100,7 +103,7 @@ class TeamDraft
      *
      * @param mixed $tokens Tokens as submitted by the browser
      *
-     * @return list<array> The chosen Pokémon, in the same order as the tokens
+     * @return list<PokemonData> The chosen Pokémon, in the same order as the tokens
      *
      * @throws InvalidTeamDraftException
      */
@@ -109,9 +112,7 @@ class TeamDraft
         $draft = $this->getDraft($draftId);
 
         if (!\is_array($tokens) || !array_is_list($tokens) || [] === $tokens) {
-            throw new InvalidTeamDraftException(
-                'Please add at least one Pokémon to your team by pressing the "Gotta Catch \'Em All" button.'
-            );
+            throw new InvalidTeamDraftException('Please add at least one Pokémon to your team by pressing the "Gotta Catch \'Em All" button.');
         }
         if (\count($tokens) > Team::MAX_POKEMON) {
             throw new InvalidTeamDraftException(sprintf('A trainer cannot own more than %d Pokémon.', Team::MAX_POKEMON));
@@ -157,6 +158,8 @@ class TeamDraft
     }
 
     /**
+     * @return array<string, PokemonData>
+     *
      * @throws InvalidTeamDraftException
      */
     private function getDraft(string $draftId): array
@@ -171,6 +174,9 @@ class TeamDraft
         return $this->all($draftId);
     }
 
+    /**
+     * @param array<string, PokemonData> $draft
+     */
     private function saveDraft(string $draftId, array $draft): void
     {
         $drafts = $this->getDrafts();
@@ -181,13 +187,16 @@ class TeamDraft
     }
 
     /**
-     * @return array<string, array<string, array>>
+     * @return array<string, array<string, PokemonData>> Drafts indexed by id
      */
     private function getDrafts(): array
     {
         return $this->requestStack->getSession()->get(self::SESSION_KEY, []);
     }
 
+    /**
+     * @param array<string, array<string, PokemonData>> $drafts
+     */
     private function saveDrafts(array $drafts): void
     {
         $this->requestStack->getSession()->set(self::SESSION_KEY, $drafts);

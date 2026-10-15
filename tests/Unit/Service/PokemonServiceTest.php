@@ -67,6 +67,9 @@ class PokemonServiceTest extends TestCase
         $this->createService(new MockHttpClient($response))->fetchRandomPokemon();
     }
 
+    /**
+     * @return iterable<string, array{MockResponse}>
+     */
     public static function failingResponses(): iterable
     {
         yield 'not found' => [new MockResponse('Not Found', ['http_code' => 404])];

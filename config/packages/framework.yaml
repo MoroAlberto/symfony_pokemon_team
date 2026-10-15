@@ -11,7 +11,7 @@ framework:
 
     http_client:
         scoped_clients:
-            # Injected as "HttpClientInterface $pokeapiClient", see PokemonService
+            # Injected with #[Target('pokeapi.client')], see PokemonService
             pokeapi.client:
                 base_uri: 'https://pokeapi.co/api/v2/'
                 # The user is waiting for the "Gotta Catch 'Em All" button: give up when PokeAPI sends nothing

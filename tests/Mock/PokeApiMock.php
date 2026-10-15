@@ -11,7 +11,7 @@ use Symfony\Component\HttpClient\Response\MockResponse;
  */
 class PokeApiMock
 {
-    /** @var array<int, array> Pokémon returned for a given PokeAPI id, others are generated */
+    /** @var array<int, array<string, mixed>> Pokémon returned for a given PokeAPI id, others are generated */
     public static array $pokemon = [];
     /** HTTP status to return instead of a Pokémon, or null for a successful response */
     public static ?int $failWithStatus = null;
@@ -20,7 +20,7 @@ class PokeApiMock
     public static ?int $failures = null;
     /** @var list<string> URLs requested so far */
     public static array $requests = [];
-    /** Options of the last request (timeout, max_duration...) */
+    /** @var array<string, mixed> Options of the last request (timeout, max_duration...) */
     public static array $lastOptions = [];
 
     public static function reset(): void
@@ -35,6 +35,11 @@ class PokeApiMock
 
     /**
      * Builds a PokeAPI-like payload.
+     *
+     * @param list<string> $abilities
+     * @param list<string> $types
+     *
+     * @return array<string, mixed>
      */
     public static function payload(
         string $name,
@@ -52,6 +57,9 @@ class PokeApiMock
         ];
     }
 
+    /**
+     * @param array<string, mixed> $options
+     */
     public function __invoke(string $method, string $url, array $options = []): MockResponse
     {
         self::$requests[] = $url;

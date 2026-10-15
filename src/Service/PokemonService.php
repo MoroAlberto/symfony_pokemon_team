@@ -10,15 +10,24 @@ use App\Exception\PokeApiException;
 use App\Repository\AbilityRepository;
 use App\Repository\TypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+/**
+ * PokemonData: a Pokémon drawn from PokeAPI. DrawnPokemon: the same, with the token given by TeamDraft.
+ *
+ * @phpstan-type PokemonData array{apiId: int, name: string, baseExperience: int, sprite: string, abilities: list<string>, types: list<string>}
+ * @phpstan-type DrawnPokemon array{token: string, apiId: int, name: string, baseExperience: int, sprite: string, abilities: list<string>, types: list<string>}
+ */
 class PokemonService
 {
     // Highest national Pokédex number available on PokeAPI
     public const MAX_POKEMON_ID = 1025;
 
     public function __construct(
+        // The client configured in config/packages/framework.yaml
+        #[Target('pokeapi.client')]
         private HttpClientInterface $pokeapiClient,
         private EntityManagerInterface $entityManager,
         private TypeRepository $typeRepository,
@@ -29,7 +38,7 @@ class PokemonService
     /**
      * Fetches a random Pokémon from PokeAPI.
      *
-     * @return array{apiId: int, name: string, baseExperience: int, sprite: string, abilities: list<string>, types: list<string>}
+     * @return PokemonData
      *
      * @throws PokeApiException
      */
@@ -54,7 +63,7 @@ class PokemonService
     /**
      * Persists the given Pokémon (as returned by fetchRandomPokemon) and adds them to the team.
      *
-     * @param list<array{name: string, baseExperience: int, sprite: string, abilities: list<string>, types: list<string>}> $pokemonList
+     * @param list<PokemonData> $pokemonList
      */
     public function addPokemonToTeam(Team $team, array $pokemonList): void
     {
@@ -90,6 +99,10 @@ class PokemonService
     }
 
     /**
+     * @param array<mixed> $data Pokémon as returned by PokeAPI
+     *
+     * @return array{name: string, baseExperience: int, sprite: string, abilities: list<string>, types: list<string>}
+     *
      * @throws PokeApiException When the PokeAPI data does not have the expected shape
      */
     private function normalize(array $data): array

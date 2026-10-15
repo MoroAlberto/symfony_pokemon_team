@@ -1,0 +1,15 @@
+parameters:
+    level: 6
+    paths:
+        - src/
+        - tests/
+        - migrations/
+    symfony:
+        # Lets PHPStan know the services of the container (built by "cache:warmup --env=test")
+        containerXmlPath: var/cache/test/App_KernelTestDebugContainer.xml
+    doctrine:
+        # Lets PHPStan know the entities, and check the DQL of the repositories
+        objectManagerLoader: tests/object-manager.php
+        # Entities follow the MakerBundle style: "private ?string $name = null" for a NOT NULL column,
+        # because a new entity has no name until it is set
+        allowNullablePropertyForRequiredField: true

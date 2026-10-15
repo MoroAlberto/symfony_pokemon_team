@@ -30,6 +30,7 @@ class Team
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTime $updated_at = null;
 
+    /** @var Collection<int, Pokemon> */
     #[ORM\OneToMany(mappedBy: 'team', targetEntity: Pokemon::class)]
     private Collection $pokemon;
 

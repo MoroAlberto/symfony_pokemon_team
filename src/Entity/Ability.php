@@ -18,6 +18,7 @@ class Ability
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
+    /** @var Collection<int, Pokemon> */
     #[ORM\ManyToMany(targetEntity: Pokemon::class, inversedBy: 'abilities')]
     private Collection $pokemon;
 

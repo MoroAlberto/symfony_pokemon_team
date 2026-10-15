@@ -5,6 +5,7 @@ namespace App\Tests\Integration\Entity;
 use App\Entity\Team;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class TeamValidationTest extends KernelTestCase
@@ -15,6 +16,9 @@ class TeamValidationTest extends KernelTestCase
         $this->assertCount(0, $this->validate($name));
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function validNames(): iterable
     {
         yield 'simple' => ['Team Rocket'];
@@ -28,6 +32,9 @@ class TeamValidationTest extends KernelTestCase
         $this->assertCount(1, $this->validate($name));
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function invalidNames(): iterable
     {
         yield 'empty' => [''];
@@ -36,7 +43,7 @@ class TeamValidationTest extends KernelTestCase
         yield 'too long' => [str_repeat('a', 256)];
     }
 
-    private function validate(string $name): iterable
+    private function validate(string $name): ConstraintViolationListInterface
     {
         self::bootKernel();
         $team = (new Team())->setName($name);

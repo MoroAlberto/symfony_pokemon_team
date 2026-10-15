@@ -33,6 +33,8 @@ Type `make` to see all the commands:
 | `make up`      | Start the app (`APP_PORT=8001 make up` for another port)  |
 | `make down`    | Stop the app                                              |
 | `make test`    | Run the test suite                                        |
+| `make check`   | Run the tests, PHPStan and the code style check (like CI) |
+| `make cs-fix`  | Fix the code style                                        |
 | `make db`      | Create or update the database schema (runs the migrations)|
 | `make logs`    | Follow the web server logs                                |
 | `make shell`   | Open a shell in the PHP container                         |
@@ -85,3 +87,13 @@ vendor/bin/phpunit
 - `tests/Unit`: entities, form and services in isolation
 - `tests/Integration`: services with the real container and database
 - `tests/Functional`: the pages, as a browser would use them
+
+## Code checks
+
+- [PHPStan](https://phpstan.org/) (`phpstan.dist.neon`, level 6) finds type errors without running the code. It knows
+  the Symfony container, the Doctrine entities and PHPUnit through its extensions: `make stan`.
+- [PHP-CS-Fixer](https://cs.symfony.com/) (`.php-cs-fixer.dist.php`) keeps the Symfony code style: `make cs` to check,
+  `make cs-fix` to fix.
+
+`make lint` runs the Symfony lints of the templates, the config and the services. `make check` runs all of them with
+the tests, like GitHub Actions (`.github/workflows/ci.yml`) does on every push.

@@ -42,6 +42,8 @@ abstract class FunctionalTestCase extends WebTestCase
      * Draws a random Pokémon like the "Gotta Catch 'Em All" button does.
      *
      * @param list<string>|null $keep Tokens of the Pokémon shown on the page, sent like create.js does
+     *
+     * @return array<string, mixed> The JSON response: the Pokémon, or the error
      */
     protected function drawPokemon(string $draftId, ?array $keep = null): array
     {
@@ -53,8 +55,8 @@ abstract class FunctionalTestCase extends WebTestCase
     /**
      * Opens the create page, draws Pokémon and submits the form with their tokens.
      *
-     * @param list<string>|null $tokens Tokens to submit, defaults to the ones of the drawn Pokémon
-     * @param string|null $rawTokens Raw value of the hidden field, overrides $tokens
+     * @param list<string>|null $tokens    Tokens to submit, defaults to the ones of the drawn Pokémon
+     * @param string|null       $rawTokens Raw value of the hidden field, overrides $tokens
      */
     protected function createTeamThroughTheForm(
         string $name,

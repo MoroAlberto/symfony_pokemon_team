@@ -10,6 +10,9 @@ use App\Service\PokemonService;
 use App\Tests\DatabaseTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
+/**
+ * @phpstan-import-type PokemonData from PokemonService
+ */
 class PokemonServiceTest extends KernelTestCase
 {
     use DatabaseTestTrait;
@@ -90,6 +93,12 @@ class PokemonServiceTest extends KernelTestCase
         return (new Team())->setName('Team Rocket')->setCreatedAt(new \DateTime())->setUpdatedAt(new \DateTime());
     }
 
+    /**
+     * @param list<string> $abilities
+     * @param list<string> $types
+     *
+     * @return PokemonData
+     */
     private function pokemonData(string $name, int $baseExperience, array $abilities, array $types): array
     {
         return [
